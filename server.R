@@ -6,6 +6,8 @@ require(ggmap)
 require(XLConnect)
 require(magrittr)
 
+setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
+
 user_gps <- readRDS("User_GPS")
 branch_gps <- readRDS("branch_GPS")
 buyers_gps <- readRDS("buyers_gps")
@@ -25,6 +27,7 @@ first_shopping<-readRDS("first_shopping")
 userlog_member<-readRDS("userlog_member")
 funnel_stat<-readRDS("funnel_stat")
 MAU<-readRDS("MAU")
+MAU_OS<-readRDS("MAU_OS")
 WAU<-readRDS("WAU")
 push_list<-readRDS("push_list")
 
@@ -170,7 +173,7 @@ shinyServer(function(input, output) {
   })
   #Cohort
   output$Cohort_plot<-renderTable({
-    
+    cohort_date<-data.frame()
     cohort<-data.frame()
     for (i in 1:max(member$week_create)){
       col<-1
@@ -182,16 +185,36 @@ shinyServer(function(input, output) {
       }
     }
     cohort<-(cohort/cohort[,1])
+
+    for(i in 1:max(member$week_create)){
+      cohort_date[i,1]<-paste(as.Date("2015-11-04")+7*(i-1))
+    }
     for (i in 1:max(member$week_create)){
-      rownames(cohort)[i]<-paste("Week",i,sep=" ")
+      rownames(cohort_date)[i]<-paste("Week",i,sep=" ")
     }
-    for (i in 1:max(userlog_member$week_create)){
-      rownames(cohort)[j]<-paste("Week",j,sep=" ")
-    }
-    cohort
+    colnames(cohort_date)<-"Date"
+    cbind(cohort_date,cohort)
     
   })
-  
+  output$Cohort_Spent<-renderTable({
+    cohort_spent<-data.frame()
+    cohort_date<-data.frame()
+    for(i in 1:max(member$week_create)){
+      temp<-filter(member,week_create==i)
+      temp<-orders[orders$uid%in%temp$uid,]
+      temp<-filter(temp,status_name=="Paid")
+      cohort_spent[i,1]<-sum(temp$amount)
+    }
+    for(i in 1:max(member$week_create)){
+      cohort_date[i,1]<-paste(as.Date("2015-11-04")+7*(i-1))
+    }
+    for (i in 1:max(member$week_create)){
+      rownames(cohort_date)[i]<-paste("Week",i,sep=" ")
+    }
+    colnames(cohort_spent)<-"Amount(NTD)"
+    colnames(cohort_date)<-"Date"
+    cbind(cohort_date,cohort_spent)
+  })
   output$Cohort_plot_Man_25<-renderTable({
     temp_member<-filter(member_birth,age=="Age 25-30"&Gender=="Male")
     cohort<-data.frame()
@@ -327,6 +350,9 @@ shinyServer(function(input, output) {
   })
   output$MAU<-renderTable({
     MAU
+  })
+  output$MAU_OS<-renderTable({
+    MAU_OS
   })
   output$WAU<-renderTable({
     WAU

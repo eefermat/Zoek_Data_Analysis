@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("~/Desktop/ZOEK/BI/Analysis/App")
+setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
 
 
 #===============Read Data =================
@@ -39,7 +39,6 @@ orders%<>%filter(type==0&amount>100)
 #Remove Zoekers
 orders=orders[orders$uid%in%zoeker$uid==F,]
 member=member[member$uid%in%zoeker$uid==F,]
-userlog%<>%select(uid,eventname,createtime,description)
 userlog=userlog[userlog$uid%in%zoeker$uid==F,]
 
 #================Manual Notification==================
@@ -99,6 +98,24 @@ userlog=userlog[userlog$uid%in%zoeker$uid==F,]
 # }
 # names(notification_stat)<-c("Event","Hours","Count")
 # notification_stat$Event=factor(notification_stat$Event,levels=c(1,2,3,4,5,6,7),labels=c("美式上海","五折美麗心","輕設計旅店下殺","頂級設計","洗車卷","薇閣六折限時三天","薇閣六折倒數三天"))
+#=====================Userlog Process ================
+
+userlog_branch=userlog[userlog$eventname=="branch/search",]
+userlogid=userlog[userlog$eventname!="branch/search",1]
+userloguid=userlog[userlog$eventname!="branch/search",2]
+userlog2=userlog[userlog$eventname!="branch/search",4]
+userlog3=userlog2[1:length(userlog2)-1]
+userlog3=paste(userlog3,sep=","," ")
+userlog3=paste(userlog3, collapse = "")
+userlog3=paste(userlog3,sep="",userlog2[length(userlog2)])
+userlog3=paste("[",userlog3,sep="")
+userlog3=paste(userlog3,"]",sep="")
+userlog3=fromJSON(userlog3)
+userlog3$id=userlogid
+userlog3=userlog3[,-2]
+userlog%<>%select(id,eventname,createtime,uid)%>%filter(eventname!="branch/search")
+userlog=merge(userlog,userlog3,by="id",all.x=T)
+userlog$os<-toupper(userlog$os)
 #===============Pid->Ptid->bid->pid =================
 product%<>%select(pid,ptid)
 branch%<>%select(bid,branchname,area,lat,lng,type,createtime)
@@ -171,7 +188,7 @@ orders$TW<- factor(orders$TW, levels= c("周一", "周二", "周三", "周四", 
 #===============Order Data===============
 orders$week=as.integer(floor((orders$cd-as.Date("2015-11-04"))/7)+1)
 orders$status_name<-0
-orders$status_name[orders$status==2zok]<-"Paid"
+orders$status_name[orders$status==2]<-"Paid"
 orders$status_name[orders$status!=2]<-"Intention"
 
 orders_member<-merge(subset(orders,!duplicated(uid)),member,by="uid",all.x=T)
@@ -216,45 +233,45 @@ user_pt<-data.frame()
 user_pt_row<-1
 user_search<-data.frame()
 user_search_row<-1
-for (i in 1:length(userlog$description)){
-  if (userlog$eventname[i]=="auth"){
-    if(!is.null(fromJSON(userlog$description[i])$lat)){
-      user_gps[user_gps_row,1]<-as.numeric(fromJSON(userlog$description[i])$lat)
-      user_gps[user_gps_row,2]<-as.numeric(fromJSON(userlog$description[i])$lng)
-      user_gps[user_gps_row,3]<-as.Date((userlog$createtime[i]))
-      user_gps_row%<>%+1
-    }
-  }
-  if (userlog$eventname[i]=="product/home"){
-    if(!is.null(fromJSON(userlog$description[i])$rpgid)){
-      user_cat[user_cat_row,1]<-as.numeric(fromJSON(userlog$description[i])$lat)
-      user_cat[user_cat_row,2]<-as.numeric(fromJSON(userlog$description[i])$lng)
-      user_cat[user_cat_row,3]<-as.numeric(fromJSON(userlog$description[i])$rpgid)
-      user_cat[user_cat_row,4]<-as.numeric(fromJSON(userlog$description[i])$start)
-      user_cat[user_cat_row,5]<-as.numeric(fromJSON(userlog$description[i])$forMap)
-      user_cat[user_cat_row,6]<-as.Date((userlog$createtime[i]))
-      user_cat[user_cat_row,7]<-as.numeric((userlog$uid[i]))
-      user_cat_row%<>%+1
-    }
-  }
-  if (userlog$eventname[i]=="product_type/detail"){
-    if(!is.null(fromJSON(userlog$description[i])$ptid)){
-      user_pt[user_pt_row,1]<-as.numeric(fromJSON(userlog$description[i])$lat)
-      user_pt[user_pt_row,2]<-as.numeric(fromJSON(userlog$description[i])$lng)
-      user_pt[user_pt_row,3]<-as.numeric(fromJSON(userlog$description[i])$ptid)
-      user_pt[user_pt_row,4]<-as.Date((userlog$createtime[i]))
-      user_pt[user_pt_row,5]<-as.numeric((userlog$uid[i]))
-      user_pt_row%<>%+1
-    }
-  }
-  if (userlog$eventname[i]=="branch/search"){
-    user_search[user_search_row,1]<-userlog$uid[i]
-    user_search[user_search_row,2]<-userlog$description[i]
-    user_search[user_search_row,3]<-as.Date((userlog$createtime[i]))
+user_gps<-userlog%>%filter(eventname=="auth")%>%select(lat,lng,createtime)
+user_cat<-userlog%>%filter(eventname=="product/home")%>%select(lat,lng,rpgid,start,forMap,createtime,uid)
+user_pt<-userlog%>%filter(eventname=="product_type/detail")%>%select(lat,lng,ptid,createtime,uid)
+# 
+# for (i in 1:length(userlog$eventname)){
+#   if (userlog$eventname[i]=="auth"){
+#     if(!is.null(userlog$lat[i])){
+#       user_gps[user_gps_row,1]<-as.numeric(userlog$lat[i])
+#       user_gps[user_gps_row,2]<-as.numeric(userlog$lng[i])
+#       user_gps[user_gps_row,3]<-as.Date((userlog$createtime[i]))
+#       user_gps_row%<>%+1
+#     }
+#   }
+#   if (userlog$eventname[i]=="product/home"){
+#     if(!is.null(userlog$rpgid[i])){
+#       user_cat[user_cat_row,1]<-as.numeric(userlog$lat[i])
+#       user_cat[user_cat_row,2]<-as.numeric(userlog$lng[i])
+#       user_cat[user_cat_row,3]<-as.numeric(userlog$rpgid[i])
+#       user_cat[user_cat_row,4]<-as.numeric(userlog$start[i])
+#       user_cat[user_cat_row,5]<-as.numeric(userlog$forMap[i])
+#       user_cat[user_cat_row,6]<-as.Date((userlog$createtime[i]))
+#       user_cat[user_cat_row,7]<-as.numeric((userlog$uid[i]))
+#       user_cat_row%<>%+1
+#     }
+#   }
+#   if (userlog$eventname[i]=="product_type/detail"){
+#     if(!is.null(userlog$ptid[i])){
+#       user_pt[user_pt_row,1]<-as.numeric(userlog$lat[i])
+#       user_pt[user_pt_row,2]<-as.numeric(userlog$lng[i])
+#       user_pt[user_pt_row,3]<-as.numeric(userlog$ptid[i])
+#       user_pt[user_pt_row,4]<-as.Date((userlog$createtime[i]))
+#       user_pt[user_pt_row,5]<-as.numeric((userlog$uid[i]))
+#       user_pt_row%<>%+1
+#     }
+#   }
+# 
+# }
 
-    user_search_row%<>%+1
-  }
-}
+user_search<-select(userlog_branch,uid,description,createtime)
 
 
 user_gps<-na.omit(user_gps)
@@ -270,57 +287,57 @@ colnames(user_search)<-c("uid","search","createtime")
 user_pt<-user_pt%>%merge(.,select(product_type,ptid,bid),by="ptid")%>%merge(.,select(branch,bid,branchname),by="bid",all.x = T)
 user_cat$rpgid[user_cat$rpgid==5]<-1
 user_cat$rpgid[user_cat$rpgid==6]<-2
-user_cat$rpgid[user_cat$rpgid==7]<-4
-user_cat$rpgid=factor(user_cat$rpgid,levels=c(1,2,3,4,5,6,7),labels=c("泡湯x休憩","晚鳥過夜","美甲x美睫","桌遊x吧x密室","泡湯x休憩","晚鳥過夜","桌遊x吧x密室"))
+user_cat$rpgid=factor(user_cat$rpgid,levels=c(1,2,3,4,5,6,7,8),labels=c("泡湯x休憩","晚鳥過夜","美甲x美睫","桌遊x密室","泡湯x休憩","晚鳥過夜","桌遊x吧x密室","主題酒吧"))
 user_cat$forMap=factor(user_cat$forMap,levels=c(0,1),labels=c("List","Map"))
-user_cat$week=as.integer(floor((user_cat$createtime-as.numeric(as.Date("2015-11-04")))/7)+1)
+user_cat$week=as.integer(floor((as.Date(user_cat$createtime)-as.Date("2015-11-04"))/7)+1)
 
 user_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
 
 #buyers
 buyers_gps<-data.frame()
-buyers_gps_row<-1
 buyers_list<-orders%>%filter(status_name=="Paid")%>%select(uid)
-
-for (i in 1:length(buyers_list$uid)){
-  temp<-filter(userlog,uid==buyers_list$uid[i])
-  if(length(temp$uid)!=0){
-    for (j in 1:length(temp$uid)){
-      if (temp$eventname[j]=="auth"){
-        if(!is.null(fromJSON(temp$description[j])$lat)){
-          buyers_gps[buyers_gps_row,1]<-as.numeric(fromJSON(temp$description[j])$lat)
-          buyers_gps[buyers_gps_row,2]<-as.numeric(fromJSON(temp$description[j])$lng)
-          buyers_gps[buyers_gps_row,3]<-as.Date((temp$createtime[j]))
-          buyers_gps_row%<>%+1
-        }
-      }
-    }
-  }
-}
+temp<-userlog[userlog$uid%in%buyers_list$uid,]
+buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
+# for (i in 1:length(buyers_list$uid)){
+#   temp<-filter(userlog,uid==buyers_list$uid[i])
+#   if(length(temp$uid)!=0){
+#     for (j in 1:length(temp$uid)){
+#       if (temp$eventname[j]=="auth"){
+#         if(!is.null(temp$lat[j])){
+#           buyers_gps[buyers_gps_row,1]<-as.numeric(temp$lat[j])
+#           buyers_gps[buyers_gps_row,2]<-as.numeric(temp$lng[j])
+#           buyers_gps[buyers_gps_row,3]<-as.Date((temp$createtime[j]))
+#           buyers_gps_row%<>%+1
+#         }
+#       }
+#     }
+#   }
+# }
 
 colnames(buyers_gps)<-c("lat","lng","createtime")
 buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
 
 #repeat buyers
 rep_buyers_gps<-data.frame()
-rep_buyers_gps_row<-1
 rep_buyers_list<-orders%>%group_by(uid)%>%summarise(count=n())%>%filter(count>=2)
+temp<-userlog[userlog$uid%in%rep_buyers_list$uid,]
+rep_buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
 
-for (i in 1:length(rep_buyers_list$uid)){
-  temp<-filter(userlog,uid==rep_buyers_list$uid[i])
-  if(length(temp$uid)!=0){
-    for (j in 1:length(temp$uid)){
-      if (temp$eventname[j]=="auth"){
-        if(!is.null(fromJSON(temp$description[j])$lat)){
-          rep_buyers_gps[rep_buyers_gps_row,1]<-as.numeric(fromJSON(temp$description[j])$lat)
-          rep_buyers_gps[rep_buyers_gps_row,2]<-as.numeric(fromJSON(temp$description[j])$lng)
-          rep_buyers_gps[rep_buyers_gps_row,3]<-as.Date((temp$createtime[j]))
-          rep_buyers_gps_row%<>%+1
-        }
-      }
-    }
-  }
-}
+# for (i in 1:length(rep_buyers_list$uid)){
+#   temp<-filter(userlog,uid==rep_buyers_list$uid[i])
+#   if(length(temp$uid)!=0){
+#     for (j in 1:length(temp$uid)){
+#       if (temp$eventname[j]=="auth"){
+#         if(!is.null(temp$lat[j])){
+#           rep_buyers_gps[rep_buyers_gps_row,1]<-as.numeric(temp$lat[j])
+#           rep_buyers_gps[rep_buyers_gps_row,2]<-as.numeric(temp$lng[j])
+#           rep_buyers_gps[rep_buyers_gps_row,3]<-as.Date((temp$createtime[j]))
+#           rep_buyers_gps_row%<>%+1
+#         }
+#       }
+#     }
+#   }
+# }
 
 colnames(rep_buyers_gps)<-c("lat","lng","createtime")
 rep_buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
@@ -331,8 +348,8 @@ userlog$Login<-0
 userlog$Login[userlog$eventname=="logout"]<-"Logout"
 userlog$Login[userlog$eventname!="logout"]<-"Login"
 userlog=filter(userlog,Login=="Login")
-userlog=select(userlog,uid,week,DN,TW,Weekday,cd,eventname)
-names(userlog)<-c("uid","Create_Time","Day_Night","Mon_to_Sun","Weekday_Weekend","cd","eventname")
+userlog=select(userlog,uid,week,DN,TW,Weekday,cd,eventname,os)
+names(userlog)<-c("uid","Create_Time","Day_Night","Mon_to_Sun","Weekday_Weekend","cd","eventname","os")
 
 #===============Branch Data===============
 branch$area_detail<-branch$area
@@ -374,8 +391,8 @@ userlog$create_month<-substr(userlog$cd,1,7)
 member$create_month<-substr(member$Create_Time,1,7)
 orders$create_month<-substr(orders$cd,1,7)
 #shorten list
-orders<-select(orders,uid,createtime,create_month,cd,Weekday,DN,week,bookingtime,discountratio,branchname,status_name)
-names(orders)<-c("uid","createtime","create_month","cd","Weekday","DN","Create_Time","bookingtime","discountratio","branchname","status_name")
+orders<-select(orders,uid,createtime,create_month,cd,Weekday,DN,week,bookingtime,discountratio,branchname,status_name,amount)
+names(orders)<-c("uid","createtime","create_month","cd","Weekday","DN","Create_Time","bookingtime","discountratio","branchname","status_name","amount")
 
 #========== First Shopping===========
 first_shopping<-merge(select(orders,uid,createtime,status_name),select(member,uid,Account_Create_Time),by="uid")
@@ -395,11 +412,11 @@ for (i in 1:length(first_shopping$uid)){
 #================ process data ===============
 
 #Take out non_member
-userlog=userlog[userlog$uid%in%(member%>%filter(Sign_Up=="Sign-up"&Create_Time>=as.Date("2015-11-04"))%$%uid),]
+temp<-userlog[userlog$uid%in%(member%>%filter(Sign_Up=="Sign-up"&Create_Time>=as.Date("2015-11-04"))%$%uid),]
 
 
 orders<-orders[!is.na(orders$branchname),]
-userlog_member<-merge(userlog,select(member,uid,week_create),by="uid",all.x=T)
+userlog_member<-merge(temp,select(member,uid,week_create),by="uid",all.x=T)
 userlog_member<-userlog_member[!is.na(userlog_member$week_create),]
 # Sales Funnel
 total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%summarise(n=n())
@@ -450,10 +467,33 @@ for (i in 1:length(unique(orders$create_month))){
 }
 names(MAU)<-c("month","Total member","MAU Login","MAU Paid")
 
+#MAU OS data
+temp<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month,Operating_System)%>%summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
+MAU_OS<-cbind(filter(temp,Operating_System=="IOS")$Cumul,filter(temp,Operating_System=="ANDROID")$Cumul)
+MAU_OS<-cbind(MAU[,1:2],MAU_OS)
+temp<-unique(userlog$create_month)
+for (i in 1:length(unique(userlog$create_month))){
+  MAU_OS[MAU_OS$month==temp[i],5]<-userlog%>%filter(create_month==temp[i]&os=="IOS")%>%subset(!duplicated(uid))%>%nrow()
+}
+for (i in 1:length(unique(userlog$create_month))){
+  MAU_OS[MAU_OS$month==temp[i],6]<-userlog%>%filter(create_month==temp[i]&os=="ANDROID")%>%subset(!duplicated(uid))%>%nrow()
+}
+temp<-unique(orders$create_month)
+for (i in 1:length(unique(orders$create_month))){
+  temp2<-orders%>%filter(create_month==temp[i]&status_name=="Paid")%>%subset(!duplicated(uid))
+  MAU_OS[MAU_OS$month==temp[i],7]<-sum(temp2$amount[temp2$uid%in%(filter(member,Operating_System=="IOS")$uid)])
+}
+for (i in 1:length(unique(orders$create_month))){
+  temp2<-orders%>%filter(create_month==temp[i]&status_name=="Paid")%>%subset(!duplicated(uid))
+  MAU_OS[MAU_OS$month==temp[i],8]<-sum(temp2$amount[temp2$uid%in%(filter(member,Operating_System=="ANDROID")$uid)])
+}
+names(MAU_OS)<-c("month","Total member","iOS member","Android member","MAU iOS","MAU Android","MAU iOS Paid","MAU Android Paid")
+
 #WAU Data
 WAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(week_create)%>%summarise(n=n())%>%mutate(Cumul=cumsum(n))
 WAU<-select(WAU,week_create,Cumul)
 temp<-unique(userlog$Create_Time)
+
 for (i in 1:length(unique(userlog$Create_Time))){
   WAU[WAU$week_create==temp[i],3]<-userlog%>%filter(Create_Time==temp[i])%>%subset(!duplicated(uid))%>%nrow()
 }
@@ -472,6 +512,7 @@ for (i in 1:length(unique(orders$Create_Time))){
 
 names(WAU)<-c("week","Total_member","WAU_Login","WAU_Rep_Login","WAU_Intention","WAU_Paid")
 
+WAU_OS<-na.omit(userlog%>%subset(!duplicated(uid))%>%group_by(Create_Time,os)%>%summarise(n=n()))
 
 #Notification
 push_id<-unique(notification_stat$ntfid)
@@ -511,6 +552,7 @@ saveRDS(first_shopping,"first_shopping")
 saveRDS(userlog_member,"userlog_member")
 saveRDS(funnel_stat,"funnel_stat")
 saveRDS(MAU,"MAU")
+saveRDS(MAU_OS,"MAU_OS")
 saveRDS(WAU,"WAU")
 saveRDS(push_list,"push_list")
 saveRDS(member_birth,"member_birth")
