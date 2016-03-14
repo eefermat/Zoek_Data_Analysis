@@ -138,7 +138,7 @@ shinyServer(function(input, output) {
     })
   dataset_view<-reactive({
     temp<-user_cat%>%filter((createtime>=input$dates_B[1])&(createtime<=input$dates_B[2]))
-    mean(select(temp,start)[,1])/10+1
+    mean(as.integer(select(temp,start)[,1]))/10+1
   })
   dataset_pt<-reactive({
     user_pt%>%filter((createtime>=input$dates_B[1])&(createtime<=input$dates_B[2]))

@@ -225,51 +225,12 @@ member_birth$age<- cut(member_birth$age,
 branch$lng%<>%as.numeric()
 branch$lat%<>%as.numeric()
 
-user_gps<-data.frame()
-user_gps_row<-1
-user_cat<-data.frame()
-user_cat_row<-1
-user_pt<-data.frame()
-user_pt_row<-1
-user_search<-data.frame()
-user_search_row<-1
 user_gps<-userlog%>%filter(eventname=="auth")%>%select(lat,lng,createtime)
+user_gps$createtime<-as.Date(user_gps$createtime)
 user_cat<-userlog%>%filter(eventname=="product/home")%>%select(lat,lng,rpgid,start,forMap,createtime,uid)
+user_cat$createtime<-as.Date(user_cat$createtime)
 user_pt<-userlog%>%filter(eventname=="product_type/detail")%>%select(lat,lng,ptid,createtime,uid)
-# 
-# for (i in 1:length(userlog$eventname)){
-#   if (userlog$eventname[i]=="auth"){
-#     if(!is.null(userlog$lat[i])){
-#       user_gps[user_gps_row,1]<-as.numeric(userlog$lat[i])
-#       user_gps[user_gps_row,2]<-as.numeric(userlog$lng[i])
-#       user_gps[user_gps_row,3]<-as.Date((userlog$createtime[i]))
-#       user_gps_row%<>%+1
-#     }
-#   }
-#   if (userlog$eventname[i]=="product/home"){
-#     if(!is.null(userlog$rpgid[i])){
-#       user_cat[user_cat_row,1]<-as.numeric(userlog$lat[i])
-#       user_cat[user_cat_row,2]<-as.numeric(userlog$lng[i])
-#       user_cat[user_cat_row,3]<-as.numeric(userlog$rpgid[i])
-#       user_cat[user_cat_row,4]<-as.numeric(userlog$start[i])
-#       user_cat[user_cat_row,5]<-as.numeric(userlog$forMap[i])
-#       user_cat[user_cat_row,6]<-as.Date((userlog$createtime[i]))
-#       user_cat[user_cat_row,7]<-as.numeric((userlog$uid[i]))
-#       user_cat_row%<>%+1
-#     }
-#   }
-#   if (userlog$eventname[i]=="product_type/detail"){
-#     if(!is.null(userlog$ptid[i])){
-#       user_pt[user_pt_row,1]<-as.numeric(userlog$lat[i])
-#       user_pt[user_pt_row,2]<-as.numeric(userlog$lng[i])
-#       user_pt[user_pt_row,3]<-as.numeric(userlog$ptid[i])
-#       user_pt[user_pt_row,4]<-as.Date((userlog$createtime[i]))
-#       user_pt[user_pt_row,5]<-as.numeric((userlog$uid[i]))
-#       user_pt_row%<>%+1
-#     }
-#   }
-# 
-# }
+user_pt$createtime<-as.Date(user_pt$createtime)
 
 user_search<-select(userlog_branch,uid,description,createtime)
 
@@ -298,21 +259,6 @@ buyers_gps<-data.frame()
 buyers_list<-orders%>%filter(status_name=="Paid")%>%select(uid)
 temp<-userlog[userlog$uid%in%buyers_list$uid,]
 buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
-# for (i in 1:length(buyers_list$uid)){
-#   temp<-filter(userlog,uid==buyers_list$uid[i])
-#   if(length(temp$uid)!=0){
-#     for (j in 1:length(temp$uid)){
-#       if (temp$eventname[j]=="auth"){
-#         if(!is.null(temp$lat[j])){
-#           buyers_gps[buyers_gps_row,1]<-as.numeric(temp$lat[j])
-#           buyers_gps[buyers_gps_row,2]<-as.numeric(temp$lng[j])
-#           buyers_gps[buyers_gps_row,3]<-as.Date((temp$createtime[j]))
-#           buyers_gps_row%<>%+1
-#         }
-#       }
-#     }
-#   }
-# }
 
 colnames(buyers_gps)<-c("lat","lng","createtime")
 buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
@@ -323,21 +269,6 @@ rep_buyers_list<-orders%>%group_by(uid)%>%summarise(count=n())%>%filter(count>=2
 temp<-userlog[userlog$uid%in%rep_buyers_list$uid,]
 rep_buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
 
-# for (i in 1:length(rep_buyers_list$uid)){
-#   temp<-filter(userlog,uid==rep_buyers_list$uid[i])
-#   if(length(temp$uid)!=0){
-#     for (j in 1:length(temp$uid)){
-#       if (temp$eventname[j]=="auth"){
-#         if(!is.null(temp$lat[j])){
-#           rep_buyers_gps[rep_buyers_gps_row,1]<-as.numeric(temp$lat[j])
-#           rep_buyers_gps[rep_buyers_gps_row,2]<-as.numeric(temp$lng[j])
-#           rep_buyers_gps[rep_buyers_gps_row,3]<-as.Date((temp$createtime[j]))
-#           rep_buyers_gps_row%<>%+1
-#         }
-#       }
-#     }
-#   }
-# }
 
 colnames(rep_buyers_gps)<-c("lat","lng","createtime")
 rep_buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
