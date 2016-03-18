@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\實習\\App")
 
 
 #===============Read Data =================
@@ -116,6 +116,7 @@ userlog3=userlog3[,-2]
 userlog%<>%select(id,eventname,createtime,uid)%>%filter(eventname!="branch/search")
 userlog=merge(userlog,userlog3,by="id",all.x=T)
 userlog$os<-toupper(userlog$os)
+userlog%<>%filter(is.na(bid))
 #===============Pid->Ptid->bid->pid =================
 product%<>%select(pid,ptid)
 branch%<>%select(bid,branchname,area,lat,lng,type,createtime)
@@ -137,26 +138,26 @@ member=merge(member,account,by="uid",all.x=T)
 member=member[-1,]# remove first one (invalid)
 
 #Extract Date
-member$cd=as.POSIXct(substr(member$createtime,1,10))
+member$cd=as.Date(member$createtime)
 member$createtime=as.POSIXct(member$createtime)
-member%<>%filter((createtime>as.POSIXct("2015-11-04")))
-member$cd=as.Date(member$cd)
+#member%<>%filter((createtime>as.POSIXct("2015-11-04")))
 
-orders$cd=as.POSIXct(substr(orders$createtime,1,10))
+
+orders$cd=as.Date(orders$createtime)
 orders$createtime=as.POSIXct(orders$createtime)
-orders%<>%filter((createtime>as.POSIXct("2015-11-04")))
-orders$cd=as.Date(orders$cd)
+#orders%<>%filter((createtime>as.POSIXct("2015-11-04")))
+
 
 sales%<>%filter(promostart!="0000-00-00 00:00:00")
-sales$cd=as.POSIXct(substr(sales$promostart,1,10))
+sales$cd=as.Date(sales$promostart)
 sales$promostart=as.POSIXct(sales$promostart)
-sales%<>%filter((promostart>as.POSIXct("2015-11-04")))
-sales$cd=as.Date(sales$cd)
+#sales%<>%filter((promostart>as.POSIXct("2015-11-04")))
 
-userlog$cd=as.POSIXct(substr((userlog$createtime),1,10))
+
+userlog$cd=as.Date(userlog$createtime)
 userlog$createtime=as.POSIXct(userlog$createtime)
-userlog%<>%filter((createtime>=as.POSIXct("2015-11-04")))
-userlog$cd=as.Date(userlog$cd)
+#userlog%<>%filter((createtime>=as.POSIXct("2015-11-04")))
+
 
 #Add weekday& weekend
 time.lub <- ymd_hms(userlog$createtime)
@@ -464,6 +465,29 @@ colnames(push_list)<-c("Date","Subject","OS","Read","Not Read","Delete","Read Ra
 push_list<-push_list[order(push_list$Date),]
 
 
+userlog_AU=merge(userlog,member%>%select(uid,Gender,Register_Type,birthday,Sign_Up),by="uid",all.x=T)
+#userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,os,age2,cd)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))
+userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%select(uid,Create_Time,cd,create_month,Gender,Register_Type,birthday,Sign_Up,age,age2)
+userlog_AU=merge(userlog_AU,member%>%select(uid,Operating_System),by="uid",all.x = T)
+member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
+colnames(member_AU)=c("gender","os","age","date","member","cumul_member")
+colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age","age2","os")
+
+
+
+member_AU$week=as.integer(floor((member_AU$date-as.Date("2015/11/04"))/7)+1)
+member_AU$month=as.Date(cut(member_AU$date,breaks="month"))
+
+userlog_AU$week=as.integer(floor((userlog_AU$date-as.Date("2015/11/04"))/7)+1)
+userlog_AU$month=as.Date(cut(userlog_AU$date,breaks="month"))
+
+orders_AU=orders%>%select(uid,create_month,cd,Create_Time,status_name,amount)
+orders_AU=merge(orders_AU,member%>%select(uid,Gender,Register_Type,Operating_System,birthday,Sign_Up),by="uid",all.x=T)
+orders_AU%<>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))
+
+colnames(orders_AU)=c("uid","month","date","week","status_name","amount","gender","register_type","os","birthday","sign_up","age2","age")
+orders_AU$month=as.Date(cut(orders_AU$date,breaks="month"))
+
 #Save file
 saveRDS(userlog,"login")
 saveRDS(member,"member_data")
@@ -487,6 +511,8 @@ saveRDS(MAU_OS,"MAU_OS")
 saveRDS(WAU,"WAU")
 saveRDS(push_list,"push_list")
 saveRDS(member_birth,"member_birth")
-
+saveRDS(member_AU,"member_AU")
+saveRDS(userlog_AU,"userlog_AU")
+saveRDS(orders_AU,"orders_AU")
 
 
