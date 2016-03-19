@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("C:\\Users\\SzuYuan\\Desktop\\實習\\App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
 
 
 #===============Read Data =================
@@ -117,6 +117,8 @@ userlog%<>%select(id,eventname,createtime,uid)%>%filter(eventname!="branch/searc
 userlog=merge(userlog,userlog3,by="id",all.x=T)
 userlog$os<-toupper(userlog$os)
 userlog%<>%filter(is.na(bid))
+
+rm(userlog2,userlogid,userloguid)
 #===============Pid->Ptid->bid->pid =================
 product%<>%select(pid,ptid)
 branch%<>%select(bid,branchname,area,lat,lng,type,createtime)
@@ -471,7 +473,7 @@ userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date
 userlog_AU=merge(userlog_AU,member%>%select(uid,Operating_System),by="uid",all.x = T)
 member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
 colnames(member_AU)=c("gender","os","age","date","member","cumul_member")
-colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age","age2","os")
+colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age2","age","os")
 
 
 
@@ -487,6 +489,126 @@ orders_AU%<>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%
 
 colnames(orders_AU)=c("uid","month","date","week","status_name","amount","gender","register_type","os","birthday","sign_up","age2","age")
 orders_AU$month=as.Date(cut(orders_AU$date,breaks="month"))
+
+
+#-----------------------
+orders_data=fromJSON("orders.json")
+sales_data=fromJSON("sales.json")
+product_data=fromJSON("product.json")
+product_type_data=fromJSON("product_type.json")
+branch_data=fromJSON("branch.json")
+
+sales_data$discount=as.numeric(sales_data$discount)
+sales_data$discountratio=as.numeric(sales_data$discountratio)
+sales_data$discountratio=sales_data$discountratio/100
+sales_data$origin_price=sales_data$discount/sales_data$discountratio
+
+orders_data=orders_data[is.na(orders_data$result)==F,]
+orders_data$amount=as.numeric(orders_data$amount)
+
+orders_data=orders_data[orders_data$amount>100,]
+orders_data$createtime=as.POSIXct(orders_data$createtime)
+
+a_data=sales_data[sales_data$sid%in%orders_data$sid,]
+b_data=as.data.frame(table(orders_data$sid))
+colnames(b_data)=c("sid","orders")
+
+sales_data=merge(sales_data,b_data,by="sid",all.x=T)
+
+sales_data[is.na(sales_data$orders),15]=0
+
+
+sales_data[sales_data$createtime=="0000-00-00 00:00:00",11]=sales_data[sales_data$createtime=="0000-00-00 00:00:00",5]
+
+sales_data$createtime=as.POSIXct(sales_data$createtime)
+
+
+
+product_data%<>%select(pid,ptid)
+product_type_data%<>%select(ptid,bid)
+
+sales_data=merge(sales_data,product_data,by="pid",all.x=T)
+
+
+sales_data$date=as.Date(sales_data$createtime)
+
+
+sales_data[sales_data$orders==0,15]=0
+
+s_date=sales_data%>%group_by(ptid,date)%>%filter(orders!=0)%>%summarise(orders=sum(orders),revenue_origin=round(sum(origin_price)),revenue_discount=sum(discount))
+
+sales_n=as.data.frame(matrix(nrow=1,ncol=4))
+colnames(sales_n)=c("date","ptid","YorN","month")
+
+sales_n[1,1]="2015-10-25"
+sales_n[1,4]="2015-10-25"
+sales_n$date%<>%as.Date()
+sales_n$month=as.Date(cut(sales_n$date,breaks="month"))
+
+date=min(sales_data$date):max(sales_data$date)
+date=as.Date(date,origin="1970-01-01")
+
+for(i in 1:length(unique(sales_data$ptid))){
+  test=as.data.frame(date)
+  temp=sales_data[sales_data$ptid%in%unique(sales_data$ptid)[i],]
+  test$ptid=temp$ptid[1]
+  test$YorN=0
+  test[test$date%in%temp$date,3]=1
+  test$month=as.Date(cut(test$date,breaks="month"))
+  sales_n=rbind(sales_n,test)
+}
+
+sales_n=sales_n[-1,]
+
+sn=sales_n%>%group_by(ptid,month)%>%summarise(number_of_shelves=sum(YorN))
+
+sales_summary_date=merge(sales_n,s_date,by=c("ptid","date"),all.x = T)
+
+sales_summary_date=sales_summary_date[,-4]
+
+
+sales_summary_date%<>%mutate(Rate=orders/YorN,weekday=weekdays(sales_summary_date$date))
+
+sales_summary_date[is.na(sales_summary_date)]<-0
+
+branch_data=fromJSON("branch.json")
+product_type_data=fromJSON("product_type.json")
+branch_data%<>%select(bid,branchname,area,type)
+branch_data$type=factor(branch_data$type,levels=c(0,1,2,3,4,5,6,7,8),labels=c("摩鐵","湯屋","商旅","美甲美睫","密室","桌遊","飛鏢bar","運動bar","按摩"))
+product_type_data%<>%select(bid,ptid,productname)
+sales_summary_date=merge(sales_summary_date,product_type_data,by="ptid",all.x = T)
+sales_summary_date=merge(sales_summary_date,branch_data,by="bid",all.x = T)
+colnames(sales_summary_date)[3]="time"
+colnames(sales_summary_date)[4]="number"
+sales_summary_date%<>%select(time,type,branchname,productname,number,orders,Rate,revenue_origin,revenue_discount,weekday,area,ptid)%>%arrange(type,branchname,productname,time)
+
+
+stickiness <- function(tdata) {
+  require(plyr)
+  mau_unique <- dlply(.data = tdata,
+                      .variables = "date",
+                      .fun = function(x){unique(x$uid)})
+  dates_char <- names(mau_unique)
+  dates_vector <- as.Date(dates_char[30:(length(dates_char))],
+                          format = "%Y-%m-%d")
+  output_df <- data.frame(dates_vector,
+                          matrix(data = 0,
+                                 nrow = length(dates_char) - 29,
+                                 ncol = 3))
+  colnames(output_df) <- c("Date", "DAU", "MAU", "Stickiness")
+  for (i in 1:length(dates_vector)) {
+    date <- dates_vector[i]
+    output_df[i, "DAU"] <- length((mau_unique[[as.character(date)]]))
+    set30 <- unique(do.call(c, mau_unique[i:(i + 29)]))  
+    output_df[i, "MAU"] <- length(set30)
+    output_df[i, "Stickiness"] <- output_df[i, "DAU"] / output_df[i, "MAU"]
+  }
+  return(output_df) 
+}
+
+
+
+
 
 #Save file
 saveRDS(userlog,"login")
@@ -514,5 +636,5 @@ saveRDS(member_birth,"member_birth")
 saveRDS(member_AU,"member_AU")
 saveRDS(userlog_AU,"userlog_AU")
 saveRDS(orders_AU,"orders_AU")
-
+saveRDS(sales_summary_date,"sales_summary_date")
 

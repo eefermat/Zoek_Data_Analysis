@@ -6,7 +6,7 @@ require(ggmap)
 require(XLConnect)
 require(magrittr)
 
-setwd("C:\\Users\\SzuYuan\\Desktop\\實習\\App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
 
 user_gps <- readRDS("User_GPS")
 branch_gps <- readRDS("branch_GPS")
@@ -30,7 +30,7 @@ MAU<-readRDS("MAU")
 MAU_OS<-readRDS("MAU_OS")
 WAU<-readRDS("WAU")
 push_list<-readRDS("push_list")
-
+sales_summary_date<-readRDS("sales_summary_date")
 
 # Shiny Main Program
 shinyServer(function(input, output) {
@@ -986,6 +986,105 @@ shinyServer(function(input, output) {
               
             }
           })
+          dataset_Data_sales <- reactive({
+            {   
+              data <- sales_summary_date
+              
+              data%<>%filter((time>=input$Data_date[1])&(time<=input$Data_date[2]))
+              
+              if(input$DorM_sales=="Month"){
+                data%<>%mutate(Month=as.Date(cut(time,breaks="month")))%>%group_by(ptid,Month)%>%summarise(Number_Of_Shelves=sum(number),Number_Of_Orders=sum(orders),Revenue_Origin=sum(revenue_origin),Revenue_Discount=sum(revenue_discount))%>%mutate(Rate=round(Number_Of_Orders/Number_Of_Shelves,3))
+                data[is.na(data)]<-0
+                data=merge(data,product_type_data,by="ptid",all.x=T)
+                data=merge(data,branch_data,by="bid",all.x=T)
+                data%<>%select(Month,type,branchname,productname,Number_Of_Shelves,Number_Of_Orders,Rate,Revenue_Origin,Revenue_Discount,area)%>%arrange(type,branchname,productname,Month)
+                colnames(data)[2]="Category"
+                colnames(data)[3]="Branch_Name"
+                colnames(data)[4]="Product_Name"
+                colnames(data)[10]="Area"
+              }
+              else if(input$DorM_sales=="Day"){
+                data=data[,-12]
+                colnames(data)=c("Time","Category","Branch_Name","Product_Name","On","Number_Of_Orders","Rate","Revenue_Origin","Revenue_Discount","Weekday","Area")
+              }
+              if(input$type_sales!="All"){
+                data%<>%filter(Category==input$type_sales)
+              }
+              if(input$branchname_sales!="All"){
+                data%<>%filter(Branch_Name==input$branchname_sales)
+              }
+              if(input$productname_sales!="All"){
+                data%<>%filter(Product_Name==input$productname_sales)
+              }
+              if(input$area_sales!="All"){
+                data%<>%filter(Area==input$area_sales)
+              }
+              data
+            }
+          })
+          output$Data_sales <- DT::renderDataTable(DT::datatable({
+            dataset_Data_sales()
+          }))
           
+          dataset_Stickiness <- reactive({
+            
+            if(input$Stickiness_variable=="All"){
+              tdata=userlog_AU%>%select(date,uid)
+              tdata=stickiness(tdata)
+              tdata
+            }
+            else if(input$Stickiness_variable=="gender"){
+              tdata1=userlog_AU%>%select(date,uid,gender)%>%filter(gender=="Male")%>%select(date,uid)
+              tdata2=userlog_AU%>%select(date,uid,gender)%>%filter(gender=="Female")%>%select(date,uid)
+              tdata1=stickiness(tdata1)
+              tdata1%<>%mutate(gender="Male")
+              tdata2=stickiness(tdata2)
+              tdata2%<>%mutate(gender="Female")
+              tdata=rbind(tdata1,tdata2)
+              tdata
+            }
+            else if(input$Stickiness_variable=="os"){
+              tdata1=userlog_AU%>%select(date,uid,os)%>%filter(os=="IOS")%>%select(date,uid)
+              tdata2=userlog_AU%>%select(date,uid,os)%>%filter(os=="ANDROID")%>%select(date,uid)
+              tdata1=stickiness(tdata1)
+              tdata1%<>%mutate(os="IOS")
+              tdata2=stickiness(tdata2)
+              tdata2%<>%mutate(os="ANDROID")
+              tdata=rbind(tdata1,tdata2)
+              tdata
+            }
+            else if(input$Stickiness_variable=="register_type"){
+              tdata1=userlog_AU%>%select(date,uid,register_type)%>%filter(register_type=="FB")%>%select(date,uid)
+              tdata2=userlog_AU%>%select(date,uid,register_type)%>%filter(register_type=="EMAIL")%>%select(date,uid)
+              tdata1=stickiness(tdata1)
+              tdata1%<>%mutate(register_type="FB")
+              tdata2=stickiness(tdata2)
+              tdata2%<>%mutate(register_type="EMAIL")
+              tdata=rbind(tdata1,tdata2)
+              tdata
+            }
+            else if(input$Stickiness_variable=="age"){
+              tdata1=userlog_AU%>%select(date,uid,age)%>%filter(age=="(25,30]")%>%select(date,uid)
+              tdata2=userlog_AU%>%select(date,uid,age)%>%filter(age=="(30,35]")%>%select(date,uid)
+              tdata1=stickiness(tdata1)
+              tdata1%<>%mutate(age="(25,30]")
+              tdata2=stickiness(tdata2)
+              tdata2%<>%mutate(age="(30,35]")
+              tdata=rbind(tdata1,tdata2)
+              tdata
+            }
+            
+          })
+          output$Stickiness_table <- renderTable({
+            dataset_Stickiness()%>%mutate(Date=as.character(Date),DAU=as.character(DAU),MAU=as.character(MAU))
+          })
+          output$Stickiness_plot<-renderPlot({
+            p <- ggplot(dataset_Stickiness(), aes_string(x="Date",y="Stickiness"))+geom_line()
+            if(input$Stickiness_variable!="All"){
+              p+aes_string(color=input$Stickiness_variable)
+            }
+            else
+              p
+          })
 })
 
