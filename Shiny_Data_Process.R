@@ -227,11 +227,16 @@ branch$lat%<>%as.numeric()
 
 user_gps<-userlog%>%filter(eventname=="auth")%>%select(lat,lng,createtime)
 user_gps$createtime<-as.Date(user_gps$createtime)
+user_gps$lat<-as.numeric(user_gps$lat)
+user_gps$lng<-as.numeric(user_gps$lng)
 user_cat<-userlog%>%filter(eventname=="product/home")%>%select(lat,lng,rpgid,start,forMap,createtime,uid)
 user_cat$createtime<-as.Date(user_cat$createtime)
+user_cat$lat<-as.numeric(user_cat$lat)
+user_cat$lng<-as.numeric(user_cat$lng)
 user_pt<-userlog%>%filter(eventname=="product_type/detail")%>%select(lat,lng,ptid,createtime,uid)
 user_pt$createtime<-as.Date(user_pt$createtime)
-
+user_pt$lat<-as.numeric(user_pt$lat)
+user_pt$lng<-as.numeric(user_pt$lng)
 user_search<-select(userlog_branch,uid,description,createtime)
 
 
@@ -259,8 +264,9 @@ buyers_gps<-data.frame()
 buyers_list<-orders%>%filter(status_name=="Paid")%>%select(uid)
 temp<-userlog[userlog$uid%in%buyers_list$uid,]
 buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
-
 colnames(buyers_gps)<-c("lat","lng","createtime")
+buyers_gps$lat<-as.numeric(buyers_gps$lat)
+buyers_gps$lng<-as.numeric(buyers_gps$lng)
 buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
 
 #repeat buyers
@@ -268,7 +274,8 @@ rep_buyers_gps<-data.frame()
 rep_buyers_list<-orders%>%group_by(uid)%>%summarise(count=n())%>%filter(count>=2)
 temp<-userlog[userlog$uid%in%rep_buyers_list$uid,]
 rep_buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
-
+rep_buyers_gps$lat<-as.numeric(rep_buyers_gps$lat)
+rep_buyers_gps$lng<-as.numeric(rep_buyers_gps$lng)
 
 colnames(rep_buyers_gps)<-c("lat","lng","createtime")
 rep_buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.5207947)
@@ -345,9 +352,9 @@ for (i in 1:length(first_shopping$uid)){
 #Take out non_member
 temp<-userlog[userlog$uid%in%(member%>%filter(Sign_Up=="Sign-up"&Create_Time>=as.Date("2015-11-04"))%$%uid),]
 
-
+temp$os<-NULL
 orders<-orders[!is.na(orders$branchname),]
-userlog_member<-merge(temp,select(member,uid,week_create),by="uid",all.x=T)
+userlog_member<-merge(temp,select(member,uid,week_create,os),by="uid",all.x=T)
 userlog_member<-userlog_member[!is.na(userlog_member$week_create),]
 # Sales Funnel
 total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%summarise(n=n())
