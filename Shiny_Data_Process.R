@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
 
 
 #===============Read Data =================
@@ -116,6 +116,9 @@ userlog3=userlog3[,-2]
 userlog%<>%select(id,eventname,createtime,uid)%>%filter(eventname!="branch/search")
 userlog=merge(userlog,userlog3,by="id",all.x=T)
 userlog$os<-toupper(userlog$os)
+userlog%<>%filter(is.na(bid))
+
+rm(userlog2,userlogid,userloguid)
 #===============Pid->Ptid->bid->pid =================
 product%<>%select(pid,ptid)
 branch%<>%select(bid,branchname,area,lat,lng,type,createtime)
@@ -137,26 +140,26 @@ member=merge(member,account,by="uid",all.x=T)
 member=member[-1,]# remove first one (invalid)
 
 #Extract Date
-member$cd=as.POSIXct(substr(member$createtime,1,10))
+member$cd=as.Date(member$createtime)
 member$createtime=as.POSIXct(member$createtime)
-member%<>%filter((createtime>as.POSIXct("2015-11-04")))
-member$cd=as.Date(member$cd)
+#member%<>%filter((createtime>as.POSIXct("2015-11-04")))
 
-orders$cd=as.POSIXct(substr(orders$createtime,1,10))
+
+orders$cd=as.Date(orders$createtime)
 orders$createtime=as.POSIXct(orders$createtime)
-orders%<>%filter((createtime>as.POSIXct("2015-11-04")))
-orders$cd=as.Date(orders$cd)
+#orders%<>%filter((createtime>as.POSIXct("2015-11-04")))
+
 
 sales%<>%filter(promostart!="0000-00-00 00:00:00")
-sales$cd=as.POSIXct(substr(sales$promostart,1,10))
+sales$cd=as.Date(sales$promostart)
 sales$promostart=as.POSIXct(sales$promostart)
-sales%<>%filter((promostart>as.POSIXct("2015-11-04")))
-sales$cd=as.Date(sales$cd)
+#sales%<>%filter((promostart>as.POSIXct("2015-11-04")))
 
-userlog$cd=as.POSIXct(substr((userlog$createtime),1,10))
+
+userlog$cd=as.Date(userlog$createtime)
 userlog$createtime=as.POSIXct(userlog$createtime)
-userlog%<>%filter((createtime>=as.POSIXct("2015-11-04")))
-userlog$cd=as.Date(userlog$cd)
+#userlog%<>%filter((createtime>=as.POSIXct("2015-11-04")))
+
 
 #Add weekday& weekend
 time.lub <- ymd_hms(userlog$createtime)
@@ -271,7 +274,7 @@ buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.52
 
 #repeat buyers
 rep_buyers_gps<-data.frame()
-rep_buyers_list<-orders%>%group_by(uid)%>%summarise(count=n())%>%filter(count>=2)
+rep_buyers_list<-orders%>%group_by(uid)%>%dplyr::summarise(count=n())%>%filter(count>=2)
 temp<-userlog[userlog$uid%in%rep_buyers_list$uid,]
 rep_buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
 rep_buyers_gps$lat<-as.numeric(rep_buyers_gps$lat)
@@ -357,9 +360,9 @@ orders<-orders[!is.na(orders$branchname),]
 userlog_member<-merge(temp,select(member,uid,week_create,os),by="uid",all.x=T)
 userlog_member<-userlog_member[!is.na(userlog_member$week_create),]
 # Sales Funnel
-total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%summarise(n=n())
+total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%dplyr::summarise(n=n())
 total_count$Type<-"Total"
-member_count<-member%>%filter(Sign_Up=="Sign-up"&week_create>=1)%>%group_by(week_create)%>%summarise(n=n())
+member_count<-member%>%filter(Sign_Up=="Sign-up"&week_create>=1)%>%group_by(week_create)%>%dplyr::summarise(n=n())
 member_count$Type<-"Member"
 retention_count<-data.frame()
 for (i in 1: max(member$week_create)){
@@ -393,7 +396,7 @@ orders$time_diff<- cut(orders$time_diff,
                        right = FALSE)
 
 #MAU Data
-MAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month)%>%summarise(n=n())%>%mutate(Cumul=cumsum(n))
+MAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month)%>%dplyr::summarise(n=n())%>%mutate(Cumul=cumsum(n))
 MAU<-select(MAU,create_month,Cumul)
 temp<-unique(userlog$create_month)
 for (i in 1:length(unique(userlog$create_month))){
@@ -406,7 +409,7 @@ for (i in 1:length(unique(orders$create_month))){
 names(MAU)<-c("month","Total member","MAU Login","MAU Paid")
 
 #MAU OS data
-temp<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month,Operating_System)%>%summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
+temp<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month,Operating_System)%>%dplyr::summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
 MAU_OS<-cbind(filter(temp,Operating_System=="IOS")$Cumul,filter(temp,Operating_System=="ANDROID")$Cumul)
 MAU_OS<-cbind(MAU[,1:2],MAU_OS)
 temp<-unique(userlog$create_month)
@@ -428,7 +431,7 @@ for (i in 1:length(unique(orders$create_month))){
 names(MAU_OS)<-c("month","Total member","iOS member","Android member","MAU iOS","MAU Android","MAU iOS Paid","MAU Android Paid")
 
 #WAU Data
-WAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(week_create)%>%summarise(n=n())%>%mutate(Cumul=cumsum(n))
+WAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(week_create)%>%dplyr::summarise(n=n())%>%mutate(Cumul=cumsum(n))
 WAU<-select(WAU,week_create,Cumul)
 temp<-unique(userlog$Create_Time)
 
@@ -450,7 +453,7 @@ for (i in 1:length(unique(orders$Create_Time))){
 
 names(WAU)<-c("week","Total_member","WAU_Login","WAU_Rep_Login","WAU_Intention","WAU_Paid")
 
-WAU_OS<-na.omit(userlog%>%subset(!duplicated(uid))%>%group_by(Create_Time,os)%>%summarise(n=n()))
+WAU_OS<-na.omit(userlog%>%subset(!duplicated(uid))%>%group_by(Create_Time,os)%>%dplyr::summarise(n=n()))
 
 #Notification
 push_id<-unique(notification_stat$ntfid)
@@ -460,7 +463,7 @@ for (i in 1:length(push_id)){
   push_list[i,1]<-as.Date(temp$senttime[1] , "%m/%d/%y")
   push_list[i,2]<-temp$subject[1]
   push_list[i,3]<-temp$to_value[1]
-  temp<-temp%>%group_by(readmark)%>%summarise(n=n())
+  temp<-temp%>%group_by(readmark)%>%dplyr::summarise(n=n())
   push_list[i,4]<-temp[temp$readmark==1,2]
   push_list[i,5]<-temp[temp$readmark==0,2]
   if(length(temp[temp$readmark==2,2])==1){push_list[i,6]<-0}else{push_list[i,6]<-temp[temp$readmark==2,2]}
@@ -469,6 +472,149 @@ for (i in 1:length(push_id)){
 
 colnames(push_list)<-c("Date","Subject","OS","Read","Not Read","Delete","Read Rate")
 push_list<-push_list[order(push_list$Date),]
+
+
+userlog_AU=merge(userlog,member%>%select(uid,Gender,Register_Type,birthday,Sign_Up),by="uid",all.x=T)
+#userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,os,age2,cd)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))
+userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%select(uid,Create_Time,cd,create_month,Gender,Register_Type,birthday,Sign_Up,age,age2)
+userlog_AU=merge(userlog_AU,member%>%select(uid,Operating_System),by="uid",all.x = T)
+member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%dplyr::summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
+colnames(member_AU)=c("gender","os","age","date","member","cumul_member")
+colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age2","age","os")
+
+
+
+member_AU$week=as.integer(floor((member_AU$date-as.Date("2015/11/04"))/7)+1)
+member_AU$month=as.Date(cut(member_AU$date,breaks="month"))
+
+userlog_AU$week=as.integer(floor((userlog_AU$date-as.Date("2015/11/04"))/7)+1)
+userlog_AU$month=as.Date(cut(userlog_AU$date,breaks="month"))
+
+orders_AU=orders%>%select(uid,create_month,cd,Create_Time,status_name,amount)
+orders_AU=merge(orders_AU,member%>%select(uid,Gender,Register_Type,Operating_System,birthday,Sign_Up),by="uid",all.x=T)
+orders_AU%<>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))
+
+colnames(orders_AU)=c("uid","month","date","week","status_name","amount","gender","register_type","os","birthday","sign_up","age2","age")
+orders_AU$month=as.Date(cut(orders_AU$date,breaks="month"))
+
+
+#-----------------------
+orders_data=fromJSON("orders.json")
+sales_data=fromJSON("sales.json")
+product_data=fromJSON("product.json")
+product_type_data=fromJSON("product_type.json")
+branch_data=fromJSON("branch.json")
+
+sales_data$discount=as.numeric(sales_data$discount)
+sales_data$discountratio=as.numeric(sales_data$discountratio)
+sales_data$discountratio=sales_data$discountratio/100
+sales_data$origin_price=sales_data$discount/sales_data$discountratio
+
+orders_data=orders_data[is.na(orders_data$result)==F,]
+orders_data$amount=as.numeric(orders_data$amount)
+
+orders_data=orders_data[orders_data$amount>100,]
+orders_data$createtime=as.POSIXct(orders_data$createtime)
+
+a_data=sales_data[sales_data$sid%in%orders_data$sid,]
+b_data=as.data.frame(table(orders_data$sid))
+colnames(b_data)=c("sid","orders")
+
+sales_data=merge(sales_data,b_data,by="sid",all.x=T)
+
+sales_data[is.na(sales_data$orders),15]=0
+
+
+sales_data[sales_data$createtime=="0000-00-00 00:00:00",11]=sales_data[sales_data$createtime=="0000-00-00 00:00:00",5]
+
+sales_data$createtime=as.POSIXct(sales_data$createtime)
+
+
+
+product_data%<>%select(pid,ptid)
+product_type_data%<>%select(ptid,bid)
+
+sales_data=merge(sales_data,product_data,by="pid",all.x=T)
+
+
+sales_data$date=as.Date(sales_data$createtime)
+
+
+sales_data[sales_data$orders==0,15]=0
+
+s_date=sales_data%>%group_by(ptid,date)%>%filter(orders!=0)%>%dplyr::summarise(orders=sum(orders),revenue_origin=round(sum(origin_price)),revenue_discount=sum(discount))
+
+sales_n=as.data.frame(matrix(nrow=1,ncol=4))
+colnames(sales_n)=c("date","ptid","YorN","month")
+
+sales_n[1,1]="2015-10-25"
+sales_n[1,4]="2015-10-25"
+sales_n$date%<>%as.Date()
+sales_n$month=as.Date(cut(sales_n$date,breaks="month"))
+
+date=min(sales_data$date):max(sales_data$date)
+date=as.Date(date,origin="1970-01-01")
+
+for(i in 1:length(unique(sales_data$ptid))){
+  test=as.data.frame(date)
+  temp=sales_data[sales_data$ptid%in%unique(sales_data$ptid)[i],]
+  test$ptid=temp$ptid[1]
+  test$YorN=0
+  test[test$date%in%temp$date,3]=1
+  test$month=as.Date(cut(test$date,breaks="month"))
+  sales_n=rbind(sales_n,test)
+}
+
+sales_n=sales_n[-1,]
+
+sn=sales_n%>%group_by(ptid,month)%>%dplyr::summarise(number_of_shelves=sum(YorN))
+
+sales_summary_date=merge(sales_n,s_date,by=c("ptid","date"),all.x = T)
+
+sales_summary_date=sales_summary_date[,-4]
+
+
+sales_summary_date%<>%mutate(Rate=orders/YorN,weekday=weekdays(sales_summary_date$date))
+
+sales_summary_date[is.na(sales_summary_date)]<-0
+
+branch_data=fromJSON("branch.json")
+product_type_data=fromJSON("product_type.json")
+branch_data%<>%select(bid,branchname,area,type)
+branch_data$type=factor(branch_data$type,levels=c(0,1,2,3,4,5,6,7,8),labels=c("摩鐵","湯屋","商旅","美甲美睫","密室","桌遊","飛鏢bar","運動bar","按摩"))
+product_type_data%<>%select(bid,ptid,productname)
+sales_summary_date=merge(sales_summary_date,product_type_data,by="ptid",all.x = T)
+sales_summary_date=merge(sales_summary_date,branch_data,by="bid",all.x = T)
+colnames(sales_summary_date)[3]="time"
+colnames(sales_summary_date)[4]="number"
+sales_summary_date%<>%select(time,type,branchname,productname,number,orders,Rate,revenue_origin,revenue_discount,weekday,area,ptid)%>%arrange(type,branchname,productname,time)
+
+
+stickiness <- function(tdata) {
+  require(plyr)
+  mau_unique <- dlply(.data = tdata,
+                      .variables = "date",
+                      .fun = function(x){unique(x$uid)})
+  dates_char <- names(mau_unique)
+  dates_vector <- as.Date(dates_char[30:(length(dates_char))],
+                          format = "%Y-%m-%d")
+  output_df <- data.frame(dates_vector,
+                          matrix(data = 0,
+                                 nrow = length(dates_char) - 29,
+                                 ncol = 3))
+  colnames(output_df) <- c("Date", "DAU", "MAU", "Stickiness")
+  for (i in 1:length(dates_vector)) {
+    date <- dates_vector[i]
+    output_df[i, "DAU"] <- length((mau_unique[[as.character(date)]]))
+    set30 <- unique(do.call(c, mau_unique[i:(i + 29)]))  
+    output_df[i, "MAU"] <- length(set30)
+    output_df[i, "Stickiness"] <- output_df[i, "DAU"] / output_df[i, "MAU"]
+  }
+  return(output_df) 
+}
+
+
+
 
 
 #Save file
@@ -494,6 +640,8 @@ saveRDS(MAU_OS,"MAU_OS")
 saveRDS(WAU,"WAU")
 saveRDS(push_list,"push_list")
 saveRDS(member_birth,"member_birth")
-
-
+saveRDS(member_AU,"member_AU")
+saveRDS(userlog_AU,"userlog_AU")
+saveRDS(orders_AU,"orders_AU")
+saveRDS(sales_summary_date,"sales_summary_date")
 

@@ -115,7 +115,33 @@ shinyUI(fluidPage(
              HTML("Buyer GPS plot"),
              plotOutput('buyer_GPS_plot'),
              HTML("Repeat Buyer GPS plot"),
-             plotOutput('rep_buyer_GPS_plot'))
+             plotOutput('rep_buyer_GPS_plot')),
+    tabPanel("AU",
+             #dateRangeInput('dates_au', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10)),
+             selectInput('AU_select','Select Ratio',c("DAU_ratio","WAU_ratio","MAU_ratio"),c("DAU_ratio")),
+             selectInput('AU_variable','Select Variable',c("All","gender","os","age")),
+             checkboxInput('AU_buy',"Buy"),
+             plotOutput('AU_plot'),
+             tableOutput('AU_table')
+    ),
+    tabPanel("Stickiness",
+             selectInput('Stickiness_variable','Select Variable',c("All","gender","os","register_type","age")),
+             plotOutput('Stickiness_plot'),
+             tableOutput('Stickiness_table')
+    ),
+    tabPanel("Data",
+             fluidRow(
+               column(4,dateRangeInput('Data_date', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10))),
+               column(4,selectInput("DorM_sales","Date/Month",c("Month","Day"))),
+               column(4,selectInput("type_sales","Category",c("All",unique(as.character(sales_summary_date$type))))),
+               column(4,selectInput("branchname_sales","Branch Name",c("All",unique(as.character(sales_summary_date$branchname))))),
+               column(4,selectInput("productname_sales","Product Name",c("All",unique(as.character(sales_summary_date$productname))))),
+               column(4,selectInput("area_sales","Area",c("All",unique(sales_summary_date$area))))
+             ),
+             fluidRow(
+               DT::dataTableOutput("Data_sales")
+             )
+    )
     )
 
 ))
