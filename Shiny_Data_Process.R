@@ -268,7 +268,7 @@ buyers_gps%<>%filter(lat>=25.061579|lat<=25.0566701|lng>=121.5261216|lng<=121.52
 
 #repeat buyers
 rep_buyers_gps<-data.frame()
-rep_buyers_list<-orders%>%group_by(uid)%>%summarise(count=n())%>%filter(count>=2)
+rep_buyers_list<-orders%>%group_by(uid)%>%dplyr::summarise(count=n())%>%filter(count>=2)
 temp<-userlog[userlog$uid%in%rep_buyers_list$uid,]
 rep_buyers_gps<-na.omit(temp%>%filter(eventname=="auth")%>%select(lat,lng,createtime))
 
@@ -353,9 +353,9 @@ orders<-orders[!is.na(orders$branchname),]
 userlog_member<-merge(temp,select(member,uid,week_create),by="uid",all.x=T)
 userlog_member<-userlog_member[!is.na(userlog_member$week_create),]
 # Sales Funnel
-total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%summarise(n=n())
+total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%dplyr::summarise(n=n())
 total_count$Type<-"Total"
-member_count<-member%>%filter(Sign_Up=="Sign-up"&week_create>=1)%>%group_by(week_create)%>%summarise(n=n())
+member_count<-member%>%filter(Sign_Up=="Sign-up"&week_create>=1)%>%group_by(week_create)%>%dplyr::summarise(n=n())
 member_count$Type<-"Member"
 retention_count<-data.frame()
 for (i in 1: max(member$week_create)){
@@ -389,7 +389,7 @@ orders$time_diff<- cut(orders$time_diff,
                        right = FALSE)
 
 #MAU Data
-MAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month)%>%summarise(n=n())%>%mutate(Cumul=cumsum(n))
+MAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month)%>%dplyr::summarise(n=n())%>%mutate(Cumul=cumsum(n))
 MAU<-select(MAU,create_month,Cumul)
 temp<-unique(userlog$create_month)
 for (i in 1:length(unique(userlog$create_month))){
@@ -402,7 +402,7 @@ for (i in 1:length(unique(orders$create_month))){
 names(MAU)<-c("month","Total member","MAU Login","MAU Paid")
 
 #MAU OS data
-temp<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month,Operating_System)%>%summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
+temp<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(create_month,Operating_System)%>%dplyr::summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
 MAU_OS<-cbind(filter(temp,Operating_System=="IOS")$Cumul,filter(temp,Operating_System=="ANDROID")$Cumul)
 MAU_OS<-cbind(MAU[,1:2],MAU_OS)
 temp<-unique(userlog$create_month)
@@ -424,7 +424,7 @@ for (i in 1:length(unique(orders$create_month))){
 names(MAU_OS)<-c("month","Total member","iOS member","Android member","MAU iOS","MAU Android","MAU iOS Paid","MAU Android Paid")
 
 #WAU Data
-WAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(week_create)%>%summarise(n=n())%>%mutate(Cumul=cumsum(n))
+WAU<-member%>%filter(Create_Time>=as.Date("2015-11-04")&Sign_Up=="Sign-up")%>%group_by(week_create)%>%dplyr::summarise(n=n())%>%mutate(Cumul=cumsum(n))
 WAU<-select(WAU,week_create,Cumul)
 temp<-unique(userlog$Create_Time)
 
@@ -446,7 +446,7 @@ for (i in 1:length(unique(orders$Create_Time))){
 
 names(WAU)<-c("week","Total_member","WAU_Login","WAU_Rep_Login","WAU_Intention","WAU_Paid")
 
-WAU_OS<-na.omit(userlog%>%subset(!duplicated(uid))%>%group_by(Create_Time,os)%>%summarise(n=n()))
+WAU_OS<-na.omit(userlog%>%subset(!duplicated(uid))%>%group_by(Create_Time,os)%>%dplyr::summarise(n=n()))
 
 #Notification
 push_id<-unique(notification_stat$ntfid)
@@ -456,7 +456,7 @@ for (i in 1:length(push_id)){
   push_list[i,1]<-as.Date(temp$senttime[1] , "%m/%d/%y")
   push_list[i,2]<-temp$subject[1]
   push_list[i,3]<-temp$to_value[1]
-  temp<-temp%>%group_by(readmark)%>%summarise(n=n())
+  temp<-temp%>%group_by(readmark)%>%dplyr::summarise(n=n())
   push_list[i,4]<-temp[temp$readmark==1,2]
   push_list[i,5]<-temp[temp$readmark==0,2]
   if(length(temp[temp$readmark==2,2])==1){push_list[i,6]<-0}else{push_list[i,6]<-temp[temp$readmark==2,2]}
@@ -471,7 +471,7 @@ userlog_AU=merge(userlog,member%>%select(uid,Gender,Register_Type,birthday,Sign_
 #userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,os,age2,cd)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))
 userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%select(uid,Create_Time,cd,create_month,Gender,Register_Type,birthday,Sign_Up,age,age2)
 userlog_AU=merge(userlog_AU,member%>%select(uid,Operating_System),by="uid",all.x = T)
-member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
+member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%dplyr::summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
 colnames(member_AU)=c("gender","os","age","date","member","cumul_member")
 colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age2","age","os")
 
@@ -535,7 +535,7 @@ sales_data$date=as.Date(sales_data$createtime)
 
 sales_data[sales_data$orders==0,15]=0
 
-s_date=sales_data%>%group_by(ptid,date)%>%filter(orders!=0)%>%summarise(orders=sum(orders),revenue_origin=round(sum(origin_price)),revenue_discount=sum(discount))
+s_date=sales_data%>%group_by(ptid,date)%>%filter(orders!=0)%>%dplyr::summarise(orders=sum(orders),revenue_origin=round(sum(origin_price)),revenue_discount=sum(discount))
 
 sales_n=as.data.frame(matrix(nrow=1,ncol=4))
 colnames(sales_n)=c("date","ptid","YorN","month")
@@ -560,7 +560,7 @@ for(i in 1:length(unique(sales_data$ptid))){
 
 sales_n=sales_n[-1,]
 
-sn=sales_n%>%group_by(ptid,month)%>%summarise(number_of_shelves=sum(YorN))
+sn=sales_n%>%group_by(ptid,month)%>%dplyr::summarise(number_of_shelves=sum(YorN))
 
 sales_summary_date=merge(sales_n,s_date,by=c("ptid","date"),all.x = T)
 

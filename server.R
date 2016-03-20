@@ -40,19 +40,19 @@ shinyServer(function(input, output) {
               {   week_start<-(floor(input$dates[1]-as.Date("2015-11-04"))/7)+1
                   week_end<-(floor(input$dates[2]-as.Date("2015-11-04"))/7)+1
                   if(input$y=="Gender"){
-                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Gender)%>%summarise(n=n())%>%group_by(Gender)%>%mutate(Cumul=cumsum(n))
+                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Gender)%>%dplyr::summarise(n=n())%>%group_by(Gender)%>%mutate(Cumul=cumsum(n))
                   }
                   else if(input$y=="Operating_System"){
-                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Operating_System)%>%summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul = cumsum(n))
+                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Operating_System)%>%dplyr::summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul = cumsum(n))
                   }
                   else if(input$y=="Register_Type"){
-                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Register_Type)%>%summarise(n=n())%>%group_by(Register_Type)%>%mutate(Cumul = cumsum(n))
+                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create,Register_Type)%>%dplyr::summarise(n=n())%>%group_by(Register_Type)%>%mutate(Cumul = cumsum(n))
                   }
                   else if(input$y=="Sign_Up"){
-                      member%>%filter((week_create>=week_start)&(week_create<=week_end))%>%group_by(week_create,Sign_Up)%>%summarise(n=n())%>%group_by(Sign_Up)%>%mutate(Cumul = cumsum(n))
+                      member%>%filter((week_create>=week_start)&(week_create<=week_end))%>%group_by(week_create,Sign_Up)%>%dplyr::summarise(n=n())%>%group_by(Sign_Up)%>%mutate(Cumul = cumsum(n))
                   }
                   else if(input$y=="Total_Member"){
-                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create)%>%summarise(n=n())%>%mutate(Cumul = cumsum(n))
+                      member%>%filter((week_create>=week_start)&(week_create<=week_end)&(Register_Type!="GUEST"))%>%group_by(week_create)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
                   }
               }
            
@@ -62,13 +62,13 @@ shinyServer(function(input, output) {
             { week_start<-(floor(input$dates_L[1]-as.Date("2015-11-04"))/7)+1
               week_end<-(floor(input$dates_L[2]-as.Date("2015-11-04"))/7)+1
               if(input$y_L=="Day_Night"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Day_Night)%>%summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Day_Night)%>%dplyr::summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
               }
               else if(input$y_L=="Mon_to_Sun"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Mon_to_Sun)%>%summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Mon_to_Sun)%>%dplyr::summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
               }
               else if(input$y_L=="Weekday_Weekend"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Weekday_Weekend)%>%summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Weekday_Weekend)%>%dplyr::summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
               }
             }
             
@@ -79,31 +79,31 @@ shinyServer(function(input, output) {
             { week_start<-(floor(input$dates_O[1]-as.Date("2015-11-04"))/7)+1
             week_end<-(floor(input$dates_O[2]-as.Date("2015-11-04"))/7)+1
             if(input$y_O=="Gender"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Gender)%>%summarise(n=n())%>%group_by(Gender)%>%mutate(Cumul=cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Gender)%>%dplyr::summarise(n=n())%>%group_by(Gender)%>%mutate(Cumul=cumsum(n))
             }
             else if(input$y_O=="Day_Night"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Day_Night)%>%summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Day_Night)%>%dplyr::summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
             }
             else if(input$y_O=="Age"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Age)%>%summarise(n=n())%>%group_by(Age)%>%mutate(Cumul=cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Age)%>%dplyr::summarise(n=n())%>%group_by(Age)%>%mutate(Cumul=cumsum(n))
             }
             else if(input$y_O=="Operating_System"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Operating_System)%>%summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Operating_System)%>%dplyr::summarise(n=n())%>%group_by(Operating_System)%>%mutate(Cumul=cumsum(n))
             }
             else if(input$y_O=="Mon_to_Sun"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Mon_to_Sun)%>%summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Mon_to_Sun)%>%dplyr::summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
             }
             else if(input$y_O=="Weekday_Weekend"){
-                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Weekday_Weekend)%>%summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Weekday_Weekend)%>%dplyr::summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
             }
             else if(input$y_O=="Rep"){
                 temp<-merge(orders,select(member,uid,week_create))
                 temp$Rep<-"First"
                 temp$Rep[temp$Create_Time!=temp$week_create]<-"Rep"
-                temp%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Rep)%>%summarise(n=n())%>%mutate(Cumul = cumsum(n))
+                temp%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Rep)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
             }
             else if(input$y_O=="Total_Order"){
-                merge(orders,select(member,uid))%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time)%>%summarise(n=n())%>%mutate(Cumul = cumsum(n))
+                merge(orders,select(member,uid))%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
             }
             }
             
@@ -113,14 +113,14 @@ shinyServer(function(input, output) {
           dataset_Merchant_Top <- reactive({
               week_start<-floor((input$dates_M[1]-as.Date("2015-11-04"))/7)+1
               week_end<-floor((input$dates_M[2]-as.Date("2015-11-04"))/7)+1
-              temp<-orders%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(branchname)%>%summarise(n=n())
+              temp<-orders%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(branchname)%>%dplyr::summarise(n=n())
               temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
               temp<-temp[order(-temp$n),]
               colnames(temp)<-c("商家","購買次數","地區")
               temp
           })
           dataset_Merchant_Line <- reactive({
-              branch%>%group_by(week)%>%summarise(n=n())%>%mutate(Cumul = cumsum(n))
+              branch%>%group_by(week)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
           })
           # Sales Data
           dataset_Sales <- reactive({
@@ -153,7 +153,7 @@ shinyServer(function(input, output) {
           
           #===============Table==============
           output$Order_demography<-renderTable({
-              orders_member%>%filter(status_name=="Paid")%>%group_by(Gender,Age)%>%summarise(n=n()) 
+              orders_member%>%filter(status_name=="Paid")%>%group_by(Gender,Age)%>%dplyr::summarise(n=n()) 
           })
           output$Top_summary<-renderTable({
         
@@ -313,13 +313,13 @@ shinyServer(function(input, output) {
           })
           
           output$Cat_Top<-renderTable({
-              temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid)%>%summarise(n=n())
+              temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid)%>%dplyr::summarise(n=n())
               names(temp)<-c("Category","Tot_views")
               temp[order(-temp$Tot_views),]
               
           })
           output$Product_Top<-renderTable({
-            temp<-dataset_pt()%>%group_by(branchname)%>%summarise(n=n())
+            temp<-dataset_pt()%>%group_by(branchname)%>%dplyr::summarise(n=n())
             names(temp)<-c("branchname","Views")
             temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
             temp<-temp[order(-temp$Views),]
@@ -331,7 +331,7 @@ shinyServer(function(input, output) {
             temp[1:20,]
           })
           output$Search_Top<-renderTable({
-            temp<-dataset_search()%>%group_by(search)%>%summarise(n=n())
+            temp<-dataset_search()%>%group_by(search)%>%dplyr::summarise(n=n())
             names(temp)<-c("Search","Counts")
             temp<-temp[order(-temp$Counts),]
             temp<-na.omit(temp)
@@ -528,7 +528,7 @@ shinyServer(function(input, output) {
           })
           output$Merchant_plot <- renderPlot({
             
-            temp<-branch%>%group_by(area,type)%>%summarise(n=n())
+            temp<-branch%>%group_by(area,type)%>%dplyr::summarise(n=n())
             p<- ggplot(data = temp) + 
                 geom_bar(aes(x = "", y = n, fill = type), stat = "identity") +
                 facet_wrap(~area) +theme_grey(base_family = "STKaiti")
@@ -553,7 +553,7 @@ shinyServer(function(input, output) {
             p
           })
           output$Orders_time_plot <- renderPlot({ 
-            temp<-orders%>%filter(status_name=="Paid")%>%group_by(time_diff)%>%summarise(n=n())
+            temp<-orders%>%filter(status_name=="Paid")%>%group_by(time_diff)%>%dplyr::summarise(n=n())
             p<- ggplot(data = temp) + 
               geom_bar(aes(x = "", y = n, fill = time_diff), stat = "identity") +
               coord_polar(theta="y")+theme_grey(base_family = "STKaiti")
@@ -597,7 +597,7 @@ shinyServer(function(input, output) {
           })
           #User Behavior 
           output$Category_browsing <- renderPlot({
-            temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid,forMap)%>%summarise(n=n())
+            temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid,forMap)%>%dplyr::summarise(n=n())
             p<- ggplot(data = temp) + 
               geom_bar(aes(x = "", y = n, fill = forMap), stat = "identity") +
               facet_wrap(~rpgid) +theme_grey(base_family = "STKaiti")
@@ -605,14 +605,14 @@ shinyServer(function(input, output) {
           })
           
           output$Map_Browsing <- renderPlot({
-            temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid,forMap)%>%summarise(n=n())
+            temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid,forMap)%>%dplyr::summarise(n=n())
             p<- ggplot(data = temp) + 
               geom_bar(aes(x = "", y = n, fill = rpgid), stat = "identity") +
               facet_wrap(~forMap) +theme_grey(base_family = "STKaiti")
             p
           })
           output$Cat_Browsing <- renderPlot({
-            temp<-dataset_cat()%>%group_by(week,rpgid)%>%summarise(n=n())
+            temp<-dataset_cat()%>%group_by(week,rpgid)%>%dplyr::summarise(n=n())
             p <- ggplot(temp, aes(x=week, y=n,color=rpgid))+
               geom_line()+
               labs(y="Freq",x="week")+
@@ -731,13 +731,13 @@ shinyServer(function(input, output) {
             
             if(input$AU_variable=="All"){
               if(input$AU_select=="DAU_ratio"){
-                member_all=member_AU%>%group_by(date)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(date)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(date)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(date)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by="date",all.x = T)
                 member_all%<>%mutate(DAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(date)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(date)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by="date",all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -747,13 +747,13 @@ shinyServer(function(input, output) {
 
               }
               else if(input$AU_select=="WAU_ratio"){
-                member_all=member_AU%>%group_by(week)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(week)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(week)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(week)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by="week",all.x = T)
                 member_all%<>%mutate(WAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(week)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(week)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by="week",all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -762,13 +762,13 @@ shinyServer(function(input, output) {
                   member_all
               }
               else if(input$AU_select=="MAU_ratio"){
-                member_all=member_AU%>%group_by(month)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(month)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(month)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(month)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by="month",all.x = T)
                 member_all%<>%mutate(MAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(month)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(month)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by="month",all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -780,13 +780,13 @@ shinyServer(function(input, output) {
             }
             else if(input$AU_variable=="gender"){
               if(input$AU_select=="DAU_ratio"){
-                member_all=member_AU%>%group_by(gender,date)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(gender,date)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(gender,date)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(gender,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("gender","date"),all.x = T)
                 member_all%<>%mutate(DAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,date)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,date)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("gender","date"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -797,13 +797,13 @@ shinyServer(function(input, output) {
                 
               
               else if(input$AU_select=="WAU_ratio"){
-                member_all=member_AU%>%group_by(gender,week)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(gender,week)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(gender,week)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(gender,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("gender","week"),all.x = T)
                 member_all%<>%mutate(WAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,week)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,week)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("gender","week"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -812,13 +812,13 @@ shinyServer(function(input, output) {
                   member_all
               }
               else if(input$AU_select=="MAU_ratio"){
-                member_all=member_AU%>%group_by(gender,month)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(gender,month)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(gender,month)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(gender,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("gender","month"),all.x = T)
                 member_all%<>%mutate(MAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,month)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,month)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("gender","month"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -830,13 +830,13 @@ shinyServer(function(input, output) {
             
             else if(input$AU_variable=="os"){
               if(input$AU_select=="DAU_ratio"){
-                member_all=member_AU%>%group_by(os,date)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(os,date)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(os,date)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(os,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("os","date"),all.x = T)
                 member_all%<>%mutate(DAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,date)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,date)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("os","date"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -845,13 +845,13 @@ shinyServer(function(input, output) {
                   member_all
               }
               else if(input$AU_select=="WAU_ratio"){
-                member_all=member_AU%>%group_by(os,week)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(os,week)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(os,week)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(os,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("os","week"),all.x = T)
                 member_all%<>%mutate(WAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,week)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,week)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("os","week"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -860,13 +860,13 @@ shinyServer(function(input, output) {
                   member_all
               }
               else if(input$AU_select=="MAU_ratio"){
-                member_all=member_AU%>%group_by(os,month)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(os,month)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%group_by(os,month)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%group_by(os,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 member_all=merge(member_all,userlog_all,by=c("os","month"),all.x = T)
                 member_all%<>%mutate(MAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,month)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,month)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("os","month"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -877,14 +877,14 @@ shinyServer(function(input, output) {
             }
             else if(input$AU_variable=="age"){
               if(input$AU_select=="DAU_ratio"){
-                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,date)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","date"),all.x = T)
                 member_all%<>%mutate(DAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("age","date"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -894,14 +894,14 @@ shinyServer(function(input, output) {
                 
               }
               else if(input$AU_select=="WAU_ratio"){
-                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,week)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","week"),all.x = T)
                 member_all%<>%mutate(WAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("age","week"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -910,14 +910,14 @@ shinyServer(function(input, output) {
                   member_all
               }
               else if(input$AU_select=="MAU_ratio"){
-                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,month)%>%distinct(uid)%>%summarise(active=n())
+                member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
+                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","month"),all.x = T)
                 member_all%<>%mutate(MAU_ratio=active/cumul_member)
                 member_all
                 if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%summarise(orders=n())
+                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%dplyr::summarise(orders=n())
                   member_all=merge(member_all,orders_all,by=c("age","month"),all.x = T)
                   member_all%<>%mutate(orders_ratio=orders/active)
                   member_all
@@ -993,7 +993,7 @@ shinyServer(function(input, output) {
               data%<>%filter((time>=input$Data_date[1])&(time<=input$Data_date[2]))
               
               if(input$DorM_sales=="Month"){
-                data%<>%mutate(Month=as.Date(cut(time,breaks="month")))%>%group_by(ptid,Month)%>%summarise(Number_Of_Shelves=sum(number),Number_Of_Orders=sum(orders),Revenue_Origin=sum(revenue_origin),Revenue_Discount=sum(revenue_discount))%>%mutate(Rate=round(Number_Of_Orders/Number_Of_Shelves,3))
+                data%<>%mutate(Month=as.Date(cut(time,breaks="month")))%>%group_by(ptid,Month)%>%dplyr::summarise(Number_Of_Shelves=sum(number),Number_Of_Orders=sum(orders),Revenue_Origin=sum(revenue_origin),Revenue_Discount=sum(revenue_discount))%>%mutate(Rate=round(Number_Of_Orders/Number_Of_Shelves,3))
                 data[is.na(data)]<-0
                 data=merge(data,product_type_data,by="ptid",all.x=T)
                 data=merge(data,branch_data,by="bid",all.x=T)
