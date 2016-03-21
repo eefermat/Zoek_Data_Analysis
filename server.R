@@ -5,7 +5,7 @@ library(scales)
 require(ggmap)
 require(XLConnect)
 require(magrittr)
-
+#aospdosa
 setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
 
 user_gps <- readRDS("User_GPS")

@@ -2,7 +2,7 @@ library(shiny)
 library(ggplot2)
 library(dplyr)
 library(scales)
-
+#kasmdksl
 shinyUI(fluidPage(
   
   title = "FunNow Data Analysis",

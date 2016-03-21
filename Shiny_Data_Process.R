@@ -645,3 +645,4 @@ saveRDS(userlog_AU,"userlog_AU")
 saveRDS(orders_AU,"orders_AU")
 saveRDS(sales_summary_date,"sales_summary_date")
 
+#jdasiod
