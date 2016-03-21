@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
+setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
 
 
 #===============Read Data =================
@@ -256,7 +256,7 @@ colnames(user_search)<-c("uid","search","createtime")
 user_pt<-user_pt%>%merge(.,select(product_type,ptid,bid),by="ptid")%>%merge(.,select(branch,bid,branchname),by="bid",all.x = T)
 user_cat$rpgid[user_cat$rpgid==5]<-1
 user_cat$rpgid[user_cat$rpgid==6]<-2
-user_cat$rpgid=factor(user_cat$rpgid,levels=c(1,2,3,4,5,6,7,8),labels=c("泡湯x休憩","晚鳥過夜","美甲x美睫","桌遊x密室","泡湯x休憩","晚鳥過夜","桌遊x吧x密室","主題酒吧"))
+user_cat$rpgid=factor(user_cat$rpgid,levels=c(1,2,3,4,5,6,7,8,9),labels=c("泡湯x休憩","晚鳥過夜","美甲x美睫","桌遊x密室","泡湯x休憩","晚鳥過夜","桌遊x吧x密室","主題酒吧","中信兄弟"))
 user_cat$forMap=factor(user_cat$forMap,levels=c(0,1),labels=c("List","Map"))
 user_cat$week=as.integer(floor((as.Date(user_cat$createtime)-as.Date("2015-11-04"))/7)+1)
 
@@ -357,7 +357,7 @@ temp<-userlog[userlog$uid%in%(member%>%filter(Sign_Up=="Sign-up"&Create_Time>=as
 
 temp$os<-NULL
 orders<-orders[!is.na(orders$branchname),]
-userlog_member<-merge(temp,select(member,uid,week_create,os),by="uid",all.x=T)
+userlog_member<-merge(temp,select(member,uid,week_create,Operating_System),by="uid",all.x=T)
 userlog_member<-userlog_member[!is.na(userlog_member$week_create),]
 # Sales Funnel
 total_count<-member%>%filter((week_create>=1))%>%group_by(week_create)%>%dplyr::summarise(n=n())

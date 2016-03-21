@@ -6,7 +6,7 @@ require(ggmap)
 require(XLConnect)
 require(magrittr)
 #aospdosa
-setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
+setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
 
 user_gps <- readRDS("User_GPS")
 branch_gps <- readRDS("branch_GPS")
