@@ -6,7 +6,7 @@ require(ggmap)
 require(XLConnect)
 require(magrittr)
 #aospdosa
-setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App\\")
 
 user_gps <- readRDS("User_GPS")
 branch_gps <- readRDS("branch_GPS")
@@ -878,7 +878,7 @@ shinyServer(function(input, output) {
             else if(input$AU_variable=="age"){
               if(input$AU_select=="DAU_ratio"){
                 member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
+                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","date"),all.x = T)
                 member_all%<>%mutate(DAU_ratio=active/cumul_member)
@@ -895,7 +895,7 @@ shinyServer(function(input, output) {
               }
               else if(input$AU_select=="WAU_ratio"){
                 member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
+                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","week"),all.x = T)
                 member_all%<>%mutate(WAU_ratio=active/cumul_member)
@@ -911,7 +911,7 @@ shinyServer(function(input, output) {
               }
               else if(input$AU_select=="MAU_ratio"){
                 member_all=member_AU%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%dplyr::summarise(member=sum(member))%>%mutate(cumul_member=cumsum(member))
-                userlog_all=userlog_AU%>%filter(age2=="(25,30]"|age2=="(30,35]")%>%group_by(age2,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
+                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
                 colnames(userlog_all)[1]="age"
                 member_all=merge(member_all,userlog_all,by=c("age","month"),all.x = T)
                 member_all%<>%mutate(MAU_ratio=active/cumul_member)
