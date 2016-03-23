@@ -6,7 +6,7 @@ require(jsonlite)
 require(dplyr)
 require(lubridate)
 
-setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
+setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
 
 
 #===============Read Data =================
@@ -40,6 +40,7 @@ orders%<>%filter(type==0&amount>100)
 orders=orders[orders$uid%in%zoeker$uid==F,]
 member=member[member$uid%in%zoeker$uid==F,]
 userlog=userlog[userlog$uid%in%zoeker$uid==F,]
+
 
 #================Manual Notification==================
 # notification<-notification[c(6,14,21,29,44,63,69),] 
@@ -158,8 +159,7 @@ sales$promostart=as.POSIXct(sales$promostart)
 
 userlog$cd=as.Date(userlog$createtime)
 userlog$createtime=as.POSIXct(userlog$createtime)
-#userlog%<>%filter((createtime>=as.POSIXct("2015-11-04")))
-
+userlog%<>%filter((cd<max(cd)))
 
 #Add weekday& weekend
 time.lub <- ymd_hms(userlog$createtime)
@@ -478,7 +478,7 @@ userlog_AU=merge(userlog,member%>%select(uid,Gender,Register_Type,birthday,Sign_
 #userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,os,age2,cd)%>%summarise(n=n())%>%mutate(cumul=cumsum(n))
 userlog_AU%<>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%select(uid,Create_Time,cd,create_month,Gender,Register_Type,birthday,Sign_Up,age,age2)
 userlog_AU=merge(userlog_AU,member%>%select(uid,Operating_System),by="uid",all.x = T)
-member_AU=member%>%filter((Sign_Up=="Sign-up"))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%dplyr::summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
+member_AU=member%>%filter((Sign_Up=="Sign-up")&(Create_Time<max(Create_Time)))%>%mutate(age=(floor((as.Date(Sys.Date())-as.Date(birthday))/365)))%>%mutate(age=as.integer(age),age2=cut(age,seq(0,100,5)))%>%group_by(Gender,Operating_System,age2,Create_Time)%>%dplyr::summarise(n=n())%>%mutate(cumul=cumsum(n))%>%as.data.frame()
 colnames(member_AU)=c("gender","os","age","date","member","cumul_member")
 colnames(userlog_AU)=c("uid","week","date","month","gender","register_type","birthday","sign_up","age2","age","os")
 
