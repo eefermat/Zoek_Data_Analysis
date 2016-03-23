@@ -159,7 +159,7 @@ sales$promostart=as.POSIXct(sales$promostart)
 
 userlog$cd=as.Date(userlog$createtime)
 userlog$createtime=as.POSIXct(userlog$createtime)
-userlog%<>%filter((cd<max(cd)))
+#userlog%<>%filter((cd<max(cd)))
 
 #Add weekday& weekend
 time.lub <- ymd_hms(userlog$createtime)
