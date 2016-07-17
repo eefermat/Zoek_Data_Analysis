@@ -5,15 +5,12 @@ library(scales)
 require(ggmap)
 require(XLConnect)
 require(magrittr)
+require(zoo)
 
-setwd("C:\\Users\\SzuYuan\\Desktop\\asd\\App")
+setwd("~/Desktop/ZOEK/BI/Data_Analysis/App")
 
-user_gps <- readRDS("User_GPS")
-branch_gps <- readRDS("branch_GPS")
-buyers_gps <- readRDS("buyers_gps")
-rep_buyers_gps <- readRDS("rep_buyers_gps")
 member<-readRDS("member_data")
-member_birth<-readRDS("member_birth")
+#member_birth<-readRDS("member_birth")
 login<-readRDS("login")
 orders_member<-readRDS("orders_member")
 orders<-readRDS("orders")
@@ -22,15 +19,11 @@ sales<-readRDS("sales")
 user_cat<-readRDS("user_cat")
 user_pt<-readRDS("user_pt")
 user_search<-readRDS("user_search")
-notification_stat<-readRDS("notification_stat")
 first_shopping<-readRDS("first_shopping")
 userlog_member<-readRDS("userlog_member")
-funnel_stat<-readRDS("funnel_stat")
-MAU<-readRDS("MAU")
-MAU_OS<-readRDS("MAU_OS")
-WAU<-readRDS("WAU")
-push_list<-readRDS("push_list")
-sales_summary_date<-readRDS("sales_summary_date")
+MAU<-readRDS("MAU_all")
+MAU_IOS<-readRDS("MAU_IOS")
+MAU_ANDROID<-readRDS("MAU_ANDROID")
 
 # Shiny Main Program
 shinyServer(function(input, output) {
@@ -62,13 +55,13 @@ shinyServer(function(input, output) {
             { week_start<-(floor(input$dates_L[1]-as.Date("2015-11-04"))/7)+1
               week_end<-(floor(input$dates_L[2]-as.Date("2015-11-04"))/7)+1
               if(input$y_L=="Day_Night"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Day_Night)%>%dplyr::summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="product/home")%>%group_by(Create_Time,Day_Night)%>%dplyr::summarise(n=n())%>%group_by(Day_Night)%>%mutate(Cumul=cumsum(n))
               }
               else if(input$y_L=="Mon_to_Sun"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Mon_to_Sun)%>%dplyr::summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="product/home")%>%group_by(Create_Time,Mon_to_Sun)%>%dplyr::summarise(n=n())%>%group_by(Mon_to_Sun)%>%mutate(Cumul = cumsum(n))
               }
               else if(input$y_L=="Weekday_Weekend"){
-                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="auth")%>%group_by(Create_Time,Weekday_Weekend)%>%dplyr::summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
+                  login%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&eventname=="product/home")%>%group_by(Create_Time,Weekday_Weekend)%>%dplyr::summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
               }
             }
             
@@ -97,10 +90,7 @@ shinyServer(function(input, output) {
                 orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Weekday_Weekend)%>%dplyr::summarise(n=n())%>%group_by(Weekday_Weekend)%>%mutate(Cumul = cumsum(n))
             }
             else if(input$y_O=="Rep"){
-                temp<-merge(orders,select(member,uid,week_create))
-                temp$Rep<-"First"
-                temp$Rep[temp$Create_Time!=temp$week_create]<-"Rep"
-                temp%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Rep)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
+                orders_member%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time,Rep)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
             }
             else if(input$y_O=="Total_Order"){
                 merge(orders,select(member,uid))%>%filter((Create_Time>=week_start)&(Create_Time<=week_end)&(status_name=="Paid"))%>%group_by(Create_Time)%>%dplyr::summarise(n=n())%>%mutate(Cumul = cumsum(n))
@@ -146,11 +136,27 @@ shinyServer(function(input, output) {
           dataset_search<-reactive({
               user_search%>%filter((createtime>=input$dates_B[1])&(createtime<=input$dates_B[2]))
           })
-          # GPS Data
-          dataset_GPS<-reactive({user_gps%>%filter((createtime>=input$dates_map[1])&(createtime<=input$dates_map[2]))})
-          dataset_buyer_GPS<-reactive({buyers_gps%>%filter((createtime>=input$dates_map[1])&(createtime<=input$dates_map[2]))})
-          dataset_rep_buyer_GPS<-reactive({rep_buyers_gps%>%filter((createtime>=input$dates_map[1])&(createtime<=input$dates_map[2]))})
-          
+          order_browsing<-reactive({
+            orders%>%filter((cd>=input$dates_B[1])&(cd<=input$dates_B[2]))
+          })
+          #orders time
+          dataset_orders_time <- reactive({
+            temp_order_time<-filter(orders,(cd>=input$dates_order_time[1])&(cd<=input$dates_order_time[2])&status_name=="Paid")
+            if(input$order_weekday=="ALL"){
+              if(input$order_cat=="ALL"){
+                temp_order_time
+              }else{
+                temp_order_time%>%filter(type==input$order_cat)
+              }
+            } else{
+              temp_order_time%<>%filter(Weekday==input$order_weekday)
+              if(input$order_cat=="ALL"){
+                temp_order_time
+              }else{
+                temp_order_time%>%filter(type==input$order_cat)
+              }
+            }
+          })
           #===============Table==============
           output$Order_demography<-renderTable({
               orders_member%>%filter(status_name=="Paid")%>%group_by(Gender,Age)%>%dplyr::summarise(n=n()) 
@@ -175,159 +181,443 @@ shinyServer(function(input, output) {
           output$Cohort_plot<-renderTable({
               cohort_date<-data.frame()
               cohort<-data.frame()
-              for (i in 1:max(member$week_create)){
+              row<-1
+              for (i in min(login$Create_Time):max(login$Create_Time)){
                   col<-1
-                  for (j in i:max(userlog_member$Create_Time)){
-                      temp<-filter(userlog_member,week_create==i)
-                      cohort[i,col]<-sum(member$uid[member$week_create==i&member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
-                      colnames(cohort)[j]<-paste("Week",j,sep=" ")
+                  for (j in i:max(login$Create_Time)){
+                      #temp<-filter(userlog,Create_Time==i)
+                      cohort[row,col]<-sum(member$uid[member$week_create==i&member$Sign_Up=="Sign-up"]%in%unique(login[login$Create_Time==j,1]))
                       col%<>%+1
                   }
+                  row%<>%+1
               }
               cohort<-(cohort/cohort[,1])
-        
-              for(i in 1:max(member$week_create)){
-                  cohort_date[i,1]<-paste(as.Date("2015-11-04")+7*(i-1))
-              }
-              for (i in 1:max(member$week_create)){
-                  rownames(cohort_date)[i]<-paste("Week",i,sep=" ")
+              row<-1
+              for(i in min(login$Create_Time):max(login$Create_Time)){
+                  cohort_date[row,1]<-paste(as.Date("2015-11-04")+7*(i-1))
+                  rownames(cohort_date)[row]<-paste("Week",i,sep=" ")
+                  colnames(cohort)[row]<-paste("Week",row,sep=" ")
+                  row%<>%+1
               }
               colnames(cohort_date)<-"Date"
               cbind(cohort_date,cohort)
             
           })
+          
+
+          
           output$Cohort_Spent<-renderTable({
-              cohort_spent<-data.frame()
-              cohort_date<-data.frame()
-              for(i in 1:max(member$week_create)){
-                  temp<-filter(member,week_create==i)
-                  temp<-orders[orders$uid%in%temp$uid,]
-                  temp<-filter(temp,status_name=="Paid")
-                  cohort_spent[i,1]<-sum(temp$amount)
-              }
-              for(i in 1:max(member$week_create)){
-                  cohort_date[i,1]<-paste(as.Date("2015-11-04")+7*(i-1))
-              }
-              for (i in 1:max(member$week_create)){
-                  rownames(cohort_date)[i]<-paste("Week",i,sep=" ")
-              }
-              colnames(cohort_spent)<-"Amount(NTD)"
-              colnames(cohort_date)<-"Date"
-              cbind(cohort_date,cohort_spent)
-          })
-          output$Cohort_plot_Man_25<-renderTable({
-            temp_member<-filter(member_birth,age=="Age 25-30"&Gender=="Male")
-            cohort<-data.frame()
-            for (i in 1:max(temp_member$week_create)){
-                col<-1
-                for (j in i:max(userlog_member$Create_Time)){
-                  temp<-filter(userlog_member,week_create==i)
-                  cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
-                  colnames(cohort)[j]<-paste("Week",j,sep=" ")
-                  col%<>%+1
+            cohort_date_spent<-data.frame()
+            cohort_spent<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              cohort_spent[i,1]<-nrow(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up"))
+              for (j in i:length(unique(member$create_month))){
+                temp<-orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+                if(input$fun_pi){
+                  cohort_spent[i,col]<-(sum(temp%>%filter(create_month<=temp_month[j]&status_name=="Paid")%$%amount)*0.15-sum(temp%>%filter(create_month<=temp_month[j]&status_name=="Paid")%$%bonus))
+                }else{
+                  cohort_spent[i,col]<-(sum(temp%>%filter(create_month<=temp_month[j]&status_name=="Paid")%$%amount))*0.15
                 }
-            }
-            cohort<-(cohort/cohort[,1])
-            for (i in 1:max(temp_member$week_create)){
-              rownames(cohort)[i]<-paste("Week",i,sep=" ")
-            }
-            for (i in 1:max(userlog_member$week_create)){
-              rownames(cohort)[j]<-paste("Week",j,sep=" ")
-            }
-            cohort
-            
-          })
-          
-          output$Cohort_plot_Man_30<-renderTable({
-              temp_member<-filter(member_birth,age=="Age 30-35"&Gender=="Male")
-              cohort<-data.frame()
-              for (i in 1:max(temp_member$week_create)){
-                col<-1
-                for (j in i:max(userlog_member$Create_Time)){
-                  temp<-filter(userlog_member,week_create==i)
-                  cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
-                  colnames(cohort)[j]<-paste("Week",j,sep=" ")
-                  col%<>%+1
-                }
-              }
-              cohort<-(cohort/cohort[,1])
-              for (i in 1:max(temp_member$week_create)){
-                rownames(cohort)[i]<-paste("Week",i,sep=" ")
-              }
-              for (i in 1:max(userlog_member$week_create)){
-                rownames(cohort)[j]<-paste("Week",j,sep=" ")
-              }
-              cohort
-            
-          })
-          
-          output$Cohort_plot_Female_25<-renderTable({
-            temp_member<-filter(member_birth,age=="Age 25-30"&Gender=="Female")
-            cohort<-data.frame()
-            for (i in 1:max(temp_member$week_create)){
-              col<-1
-              for (j in i:max(userlog_member$Create_Time)){
-                temp<-filter(userlog_member,week_create==i)
-                cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
-                colnames(cohort)[j]<-paste("Week",j,sep=" ")
+                colnames(cohort_spent)[1]<-paste("base")
+                colnames(cohort_spent)[j+1]<-paste("month",j,sep=" ")
                 col%<>%+1
               }
             }
-            cohort<-(cohort/cohort[,1])
-            for (i in 1:max(temp_member$week_create)){
-              rownames(cohort)[i]<-paste("Week",i,sep=" ")
+            cohort_spent_percentage<-cohort_spent
+            cohort_spent_percentage[,2:ncol(cohort_spent_percentage)]<-(cohort_spent[,2:ncol(cohort_spent)]/cohort_spent[,1])
+            
+  
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_spent[i,1]<-paste("month",i,sep=" ")
             }
-            for (i in 1:max(userlog_member$week_create)){
-              rownames(cohort)[j]<-paste("Week",j,sep=" ")
+            colnames(cohort_date_spent)<-"Date"
+            if(input$LTV){
+              cbind(cohort_date_spent,cohort_spent_percentage)
+            }else{
+              cbind(cohort_date_spent,cohort_spent)
+              
             }
-            cohort
             
           })
           
-          output$Cohort_plot_Female_30<-renderTable({
-            temp_member<-filter(member_birth,age=="Age 30-35"&Gender=="Female")
-            cohort<-data.frame()
-            for (i in 1:max(temp_member$week_create)){
-              col<-1
-              for (j in i:max(userlog_member$Create_Time)){
-                temp<-filter(userlog_member,week_create==i)
-                cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
-                colnames(cohort)[j]<-paste("Week",j,sep=" ")
+          output$Cohort_conversion_plot<-renderTable({
+            
+            cohort_date_c<-data.frame()
+            cohort_c<-data.frame()
+            row<-1
+            for (i in min(login$Create_Time):max(login$Create_Time)){
+              col<-2
+              cohort_c[row,1]<-nrow(filter(member,week_create==i&Sign_Up=="Sign-up"&area==input$cohort_area))
+              for (j in i:max(login$Create_Time)){
+                temp<-filter(orders,Create_Time<=j&Create_Time>j-1&status_name=="Paid"&area==input$cohort_area)
+                cohort_c[row,col]<-sum(member$uid[member$week_create==i&member$Sign_Up=="Sign-up"&member$area==input$cohort_area]%in%temp$uid)
+                col%<>%+1
+              }
+              row%<>%+1
+            }
+            cohort_c[,2:ncol(cohort_c)]<-(cohort_c[,2:ncol(cohort_c)]/cohort_c[,1])
+            
+            row<-1
+            colnames(cohort_c)[1]<-paste("base")
+            for(i in min(login$Create_Time):max(login$Create_Time)){
+              cohort_date_c[row,1]<-paste(as.Date("2015-11-04")+7*(i-1))
+              rownames(cohort_date_c)[row]<-paste("Week",i,sep=" ")
+              colnames(cohort_c)[row+1]<-paste("Week",row,sep=" ")
+              row%<>%+1
+            }
+            
+            colnames(cohort_date_c)<-"Date"
+            cbind(cohort_date_c,cohort_c)
+            
+          },digit=3)
+          output$Cohort_conversion_month<-renderTable({
+            cohort_date_cm<-data.frame()
+            cohort_cm<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              cohort_cm[i,1]<-nrow(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up"))
+              for (j in i:length(unique(member$create_month))){
+                temp<-orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+                cohort_cm[i,col]<-length(unique(temp%>%filter(create_month==temp_month[j]&status_name=="Paid")%$%uid))
+                colnames(cohort_cm)[1]<-paste("base")
+                colnames(cohort_cm)[j+1]<-paste("month",j,sep=" ")
                 col%<>%+1
               }
             }
-            cohort<-(cohort/cohort[,1])
-            for (i in 1:max(temp_member$week_create)){
-              rownames(cohort)[i]<-paste("Week",i,sep=" ")
-            }
-            for (i in 1:max(userlog_member$week_create)){
-              rownames(cohort)[j]<-paste("Week",j,sep=" ")
-            }
-            cohort
             
+            if(input$cm_percentage){
+              cohort_cm[,2:ncol(cohort_cm)]<-(cohort_cm[,2:ncol(cohort_cm)]/cohort_cm[,1])
+            }
+            
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_cm[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_cm)<-"Date"
+            
+            cbind(cohort_date_cm,cohort_cm)
+          },digit=3)
+          
+          output$Conversion_trend<-renderTable({
+            cohort_date_ct<-data.frame()
+            cohort_ct<-data.frame()
+            member_count<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              temp_old<-orders[orders$uid%in%(filter(member,create_month<temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+              temp_new<-orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+              member_count[i,1]<-nrow(filter(member,create_month<temp_month[i]&Sign_Up=="Sign-up"))
+              member_count[i,2]<-nrow(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up"))
+              cohort_ct[i,1]<-length(unique(temp_old%>%filter(create_month==temp_month[i]&status_name=="Paid")%$%uid))
+              cohort_ct[i,2]<-length(unique(temp_new%>%filter(create_month==temp_month[i]&status_name=="Paid")%$%uid))
+              
+            }
+            colnames(member_count)<-c("Old","New")
+            colnames(cohort_ct)<-c("Old conversion","New conversion")
+            if(input$cm_percentage){
+              cohort_ct<-(cohort_ct/member_count)
+            }
+            
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_ct[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_ct)<-"Date"
+            
+            cbind(cohort_date_ct,member_count,cohort_ct)
+          },digit=3)
+          
+          output$Cohort_buy_size<-renderTable({
+            cohort_date_bs<-data.frame()
+            cohort_bs<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              cohort_bs[i,1]<-nrow(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up"))
+              for (j in i:length(unique(member$create_month))){
+                temp<-orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+                cohort_bs[i,col]<-(sum(temp%>%filter(create_month==temp_month[j]&status_name=="Paid")%$%amount))/nrow(temp%>%filter(create_month==temp_month[j]&status_name=="Paid"))
+                colnames(cohort_bs)[1]<-paste("base")
+                colnames(cohort_bs)[j+1]<-paste("month",j,sep=" ")
+                col%<>%+1
+              }
+            }
+            
+            
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_bs[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_bs)<-"Date"
+            
+            cbind(cohort_date_bs,cohort_bs)
           })
+          output$Cohort_repeat<-renderTable({
+            cohort_date_rep<-data.frame()
+            cohort_rep<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              cohort_rep[i,1]<-(nrow(orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]%>%filter(status_name=="Paid")))
+              for (j in i:length(unique(member$create_month))){
+                temp<-orders[orders$uid%in%(filter(member,create_month==temp_month[i]&Sign_Up=="Sign-up")%$%uid),]
+                cohort_rep[i,col]<-(mean((temp%>%filter(create_month==temp_month[j]&status_name=="Paid")%>%group_by(uid)%>%summarise(n=n()))%$%n))
+                colnames(cohort_rep)[1]<-paste("orders")
+                colnames(cohort_rep)[j+1]<-paste("month",j,sep=" ")
+                col%<>%+1
+              }
+            }
+            
+            
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_rep[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_rep)<-"Date"
+            
+            cbind(cohort_date_rep,cohort_rep)
+          })
+          
+          output$Repeat_trend<-renderTable({
+            cohort_date_rt<-data.frame()
+            cohort_rt<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              cohort_rt[i,1]<-(nrow(orders%>%filter(create_month==temp_month[i]&status_name=="Paid")%>%group_by(uid)%>%summarise(n=n())))
+              cohort_rt[i,2]<-(mean((orders%>%filter(create_month==temp_month[i]&status_name=="Paid")%>%group_by(uid)%>%summarise(n=n()))%$%n))
+            }
+            
+            colnames(cohort_rt)<-c("orders","Rep")
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_rt[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_rt)<-"Date"
+            
+            cbind(cohort_date_rt,cohort_rt)
+          })
+          output$Repeat_ratio_trend<-renderTable({
+            cohort_date_rtt<-data.frame()
+            cohort_rtt<-data.frame()
+            temp_month<-unique(member$create_month)
+            temp_month<-temp_month[order(temp_month)]
+            for (i in 1:length(unique(member$create_month))){
+              col<-2
+              temp<-orders%>%filter(create_month<=temp_month[i]&status_name=="Paid")%>%group_by(uid)%>%summarise(n=n())
+              cohort_rtt[i,1]<-nrow(temp%>%filter(n>=2))/nrow(temp)
+            }
+            
+            colnames(cohort_rtt)<-c("Rep_ratio")
+            for (i in 1:length(unique(member$create_month))){
+              cohort_date_rtt[i,1]<-paste(temp_month[i])
+            }
+            colnames(cohort_date_rtt)<-"Date"
+            
+            cbind(cohort_date_rtt,cohort_rtt)
+          })
+          # output$Cohort_plot_Man_25<-renderTable({
+          #   temp_member<-filter(member_birth,age=="Age 25-30"&Gender=="Male")
+          #   cohort<-data.frame()
+          #   for (i in 1:max(temp_member$week_create)){
+          #       col<-1
+          #       for (j in i:max(userlog_member$Create_Time)){
+          #         temp<-filter(userlog_member,week_create==i)
+          #         cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
+          #         colnames(cohort)[j]<-paste("Week",j,sep=" ")
+          #         col%<>%+1
+          #       }
+          #   }
+          #   cohort<-(cohort/cohort[,1])
+          #   for (i in 1:max(temp_member$week_create)){
+          #     rownames(cohort)[i]<-paste("Week",i,sep=" ")
+          #   }
+          #   for (i in 1:max(userlog_member$week_create)){
+          #     rownames(cohort)[j]<-paste("Week",j,sep=" ")
+          #   }
+          #   cohort
+          #   
+          # })
+          # 
+          # output$Cohort_plot_Man_30<-renderTable({
+          #     temp_member<-filter(member_birth,age=="Age 30-35"&Gender=="Male")
+          #     cohort<-data.frame()
+          #     for (i in 1:max(temp_member$week_create)){
+          #       col<-1
+          #       for (j in i:max(userlog_member$Create_Time)){
+          #         temp<-filter(userlog_member,week_create==i)
+          #         cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
+          #         colnames(cohort)[j]<-paste("Week",j,sep=" ")
+          #         col%<>%+1
+          #       }
+          #     }
+          #     cohort<-(cohort/cohort[,1])
+          #     for (i in 1:max(temp_member$week_create)){
+          #       rownames(cohort)[i]<-paste("Week",i,sep=" ")
+          #     }
+          #     for (i in 1:max(userlog_member$week_create)){
+          #       rownames(cohort)[j]<-paste("Week",j,sep=" ")
+          #     }
+          #     cohort
+          #   
+          # })
+          # 
+          # output$Cohort_plot_Female_25<-renderTable({
+          #   temp_member<-filter(member_birth,age=="Age 25-30"&Gender=="Female")
+          #   cohort<-data.frame()
+          #   for (i in 1:max(temp_member$week_create)){
+          #     col<-1
+          #     for (j in i:max(userlog_member$Create_Time)){
+          #       temp<-filter(userlog_member,week_create==i)
+          #       cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
+          #       colnames(cohort)[j]<-paste("Week",j,sep=" ")
+          #       col%<>%+1
+          #     }
+          #   }
+          #   cohort<-(cohort/cohort[,1])
+          #   for (i in 1:max(temp_member$week_create)){
+          #     rownames(cohort)[i]<-paste("Week",i,sep=" ")
+          #   }
+          #   for (i in 1:max(userlog_member$week_create)){
+          #     rownames(cohort)[j]<-paste("Week",j,sep=" ")
+          #   }
+          #   cohort
+          #   
+          # })
+          # 
+          # output$Cohort_plot_Female_30<-renderTable({
+          #   temp_member<-filter(member_birth,age=="Age 30-35"&Gender=="Female")
+          #   cohort<-data.frame()
+          #   for (i in 1:max(temp_member$week_create)){
+          #     col<-1
+          #     for (j in i:max(userlog_member$Create_Time)){
+          #       temp<-filter(userlog_member,week_create==i)
+          #       cohort[i,col]<-sum(temp_member$uid[temp_member$week_create==i&temp_member$Sign_Up=="Sign-up"]%in%unique(temp[temp$Create_Time==j,1]))
+          #       colnames(cohort)[j]<-paste("Week",j,sep=" ")
+          #       col%<>%+1
+          #     }
+          #   }
+          #   cohort<-(cohort/cohort[,1])
+          #   for (i in 1:max(temp_member$week_create)){
+          #     rownames(cohort)[i]<-paste("Week",i,sep=" ")
+          #   }
+          #   for (i in 1:max(userlog_member$week_create)){
+          #     rownames(cohort)[j]<-paste("Week",j,sep=" ")
+          #   }
+          #   cohort
+          #   
+          # })
           output$Orders_Sales_summary<-renderTable({
             
             (dataset_Orders_sub()/dataset_Sales()*100)
             
           })
-          
+
           output$Cat_Top<-renderTable({
               temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid)%>%dplyr::summarise(n=n())
               names(temp)<-c("Category","Tot_views")
               temp[order(-temp$Tot_views),]
-              
+
           })
-          output$Product_Top<-renderTable({
-            temp<-dataset_pt()%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          
+          output$Product_Top_rest<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="休憩")%>%group_by(branchname)%>%dplyr::summarise(n=n())
             names(temp)<-c("branchname","Views")
             temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
             temp<-temp[order(-temp$Views),]
             temp$order_count<-0
+            temp$intention_count<-0
             for (i in 1:length(temp$branchname)){
-              temp$order_count[i]<-as.numeric(sum((orders$branchname==temp$branchname[i])&(orders$status_name=="Paid")))
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
             }
-            names(temp)<-c("Merchants","Views","地區","銷售")
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
+            temp
+          })
+          output$Product_Top_massage<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="按摩")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+            names(temp)<-c("branchname","Views")
+            temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
+            temp<-temp[order(-temp$Views),]
+            temp$order_count<-0
+            temp$intention_count<-0
+            for (i in 1:length(temp$branchname)){
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
+            }
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
+            temp[1:30,]
+          })
+          output$Product_Top_manicure<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="美甲美睫")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+            names(temp)<-c("branchname","Views")
+            temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
+            temp<-temp[order(-temp$Views),]
+            temp$order_count<-0
+            temp$intention_count<-0
+            for (i in 1:length(temp$branchname)){
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
+            }
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
+            temp[1:20,]
+          })
+          output$Product_Top_escape<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="密室")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+            names(temp)<-c("branchname","Views")
+            temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
+            temp<-temp[order(-temp$Views),]
+            temp$order_count<-0
+            temp$intention_count<-0
+            for (i in 1:length(temp$branchname)){
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
+            }
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
+            temp[1:10,]
+          })
+          output$Product_Top_board<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="桌遊")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+            names(temp)<-c("branchname","Views")
+            temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
+            temp<-temp[order(-temp$Views),]
+            temp$order_count<-0
+            temp$intention_count<-0
+            for (i in 1:length(temp$branchname)){
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
+            }
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
+            temp[1:10,]
+          })
+          output$Product_Top_bar<-renderTable({
+            temp<-dataset_pt()%>%filter(category=="主題酒吧")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+            names(temp)<-c("branchname","Views")
+            temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
+            temp<-temp[order(-temp$Views),]
+            temp$order_count<-0
+            temp$intention_count<-0
+            for (i in 1:length(temp$branchname)){
+              temp$order_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Paid")))
+              temp$intention_count[i]<-as.numeric(sum((order_browsing()$branchname==temp$branchname[i])&(order_browsing()$status_name=="Intention")))
+            }
+            temp$order_percentage<-temp$order_count/temp$Views
+            temp$intention_percentage<-temp$intention_count/temp$Views
+            names(temp)<-c("Merchants","Views","地區","銷售","有意圖","銷售比例","有意圖比例")
             temp[1:20,]
           })
           output$Search_Top<-renderTable({
@@ -347,19 +637,6 @@ shinyServer(function(input, output) {
             temp[1,1]<-(dataset_view())
             names(temp)<-c("Ave pages view")
             temp
-          })
-          output$MAU<-renderTable({
-            MAU
-          })
-          output$MAU_OS<-renderTable({
-            MAU_OS
-          })
-          output$WAU<-renderTable({
-            WAU
-          })
-          #notification
-          output$notification_table <- renderTable({
-            push_list
           })
           #===============Plot================ 
           output$Member_plot <- renderPlot({
@@ -553,48 +830,58 @@ shinyServer(function(input, output) {
             p
           })
           output$Orders_time_plot <- renderPlot({ 
+
             temp<-orders%>%filter(status_name=="Paid")%>%group_by(time_diff)%>%dplyr::summarise(n=n())
             p<- ggplot(data = temp) + 
               geom_bar(aes(x = "", y = n, fill = time_diff), stat = "identity") +
               coord_polar(theta="y")+theme_grey(base_family = "STKaiti")
             p
             })
-          #Sales Funnel 
-          output$Funnel_plot <- renderPlot({
-            p <- ggplot(funnel_stat, aes( week_create, n))
-            p + geom_area(aes(colour = Type, fill= Type), position = 'stack') +scale_x_continuous(breaks=seq(0, 52, 1))
-          })
-          #WAU_Funnel_plot 
-          output$WAU_Funnel_plot <- renderPlot({
-        #     temp_L<-select(WAU,week,WAU_Login)
-        #     temp_L$Type<-"Login"
-        #     names(temp_L)<-c("week","n","Type")
-        #     temp_L$n<-temp_L$n/WAU$Total_member
-            temp_RL<-select(WAU,week,WAU_Rep_Login)
-            temp_RL$Type<-"Rep_Login"
-            names(temp_RL)<-c("week","n","Type")
-            temp_RL$n<-temp_RL$n/WAU$WAU_Login
-            temp_I<-select(WAU,week,WAU_Intention)
-            temp_I$Type<-"Intention"
-            names(temp_I)<-c("week","n","Type")
-            temp_I$n<-temp_I$n/WAU$WAU_Login
-            temp_P<-select(WAU,week,WAU_Paid)
-            temp_P$Type<-"Paid"
-            names(temp_P)<-c("week","n","Type")
-            temp_P$n<-temp_P$n/WAU$WAU_Login
-            temp<-rbind(temp_RL,temp_I,temp_P)
-            p <- ggplot(temp, aes(week, n))
-            p + geom_area(aes(colour = Type, fill= Type), position = 'stack') +scale_x_continuous(breaks=seq(0, 52, 1))
-          })
-          #WAU
-          output$WAU_plot<-renderPlot({
-            p <- ggplot(WAU, aes(x=week, y=WAU_Login))+
-              geom_line()+
-              labs(y="WAU",x="week")+
-              theme(panel.grid.minor.x=element_blank())+
-              geom_text(data=WAU,aes(label=WAU_Login))+scale_x_continuous(breaks=seq(0, 52, 1))
+          #MAU
+          output$MAU_plot <- renderPlot({
+            if(input$MAU_OS=="ALL"){
+              temp<-filter(MAU,funnel=="retention")
+            }else if (input$MAU_OS=="IOS"){
+              temp<-filter(MAU_IOS,funnel=="retention")
+            }else if(input$MAU_OS=="ANDROID"){
+              temp<-filter(MAU_ANDROID,funnel=="retention")
+            }
+            if(input$MAU_var=="MAU"){
+              p <- ggplot(data=temp)+geom_line(aes(x=Date,y=MAU_count))
+            }else if(input$MAU_var=="DAU"){
+              p <- ggplot(data=temp)+geom_line(aes(x=Date,y=DAU_count))
+            }else if(input$MAU_var=="DAU_MAU_ratio"){
+              p <- ggplot(data=temp)+geom_line(aes(x=Date,y=DAU_MAU_percentage))
+            }
             p
           })
+          output$MAU_stacked <- renderPlot({
+            if(input$MAU_OS=="ALL"){
+              p <- ggplot(MAU, aes(x=Date,y=MAU_percentage,group=funnel,fill=funnel)) + 
+                geom_area()+
+                labs(y="Percentage",x="Date")
+            }else if (input$MAU_OS=="IOS"){
+              p <- ggplot(MAU_IOS, aes(x=Date,y=MAU_percentage,group=funnel,fill=funnel)) + 
+                geom_area()+
+                labs(y="Percentage",x="Date")
+            }else if(input$MAU_OS=="ANDROID"){
+              p <- ggplot(MAU_ANDROID, aes(x=Date,y=MAU_percentage,group=funnel,fill=funnel)) + 
+                geom_area()+
+                labs(y="Percentage",x="Date")
+            }
+
+            p
+          })
+          output$MAU_table<- renderTable({
+            if(input$MAU_OS=="ALL"){
+              MAU
+            }else if (input$MAU_OS=="IOS"){
+              MAU_IOS
+            }else if(input$MAU_OS=="ANDROID"){
+              MAU_ANDROID
+            }
+          },digit=3)
+          
           #User Behavior 
           output$Category_browsing <- renderPlot({
             temp<-dataset_cat()%>%filter(start==0)%>%group_by(rpgid,forMap)%>%dplyr::summarise(n=n())
@@ -612,12 +899,32 @@ shinyServer(function(input, output) {
             p
           })
           output$Cat_Browsing <- renderPlot({
-            temp<-dataset_cat()%>%group_by(week,rpgid)%>%dplyr::summarise(n=n())
-            p <- ggplot(temp, aes(x=week, y=n,color=rpgid))+
-              geom_line()+
-              labs(y="Freq",x="week")+
-              theme(panel.grid.minor.x=element_blank())+
-              geom_text(data=temp,aes(label=n))+scale_x_continuous(breaks=seq(0, 52, 1)) +theme_grey(base_family = "STKaiti")
+            if(input$Cat_Browsing_variable=="Week"){
+              if(input$remove_first==F){
+                temp<-dataset_cat()%>%group_by(week,rpgid)%>%dplyr::summarise(n=n())
+              }else{
+                temp<-merge(dataset_cat(),select(member,uid,Create_Time),by="uid")
+                temp%<>%filter(createtime!=Create_Time)%>%group_by(week,rpgid)%>%dplyr::summarise(n=n())
+              }
+              p <- ggplot(temp, aes(x=week, y=n,color=rpgid))+
+                geom_line()+
+                labs(y="Freq",x="week")+
+                theme(panel.grid.minor.x=element_blank())+
+                geom_text(data=temp,aes(label=n))+scale_x_continuous(breaks=seq(0, 52, 1)) +theme_grey(base_family = "STKaiti")
+              
+            } else if(input$Cat_Browsing_variable=="Day"){
+              if(input$remove_first==F){
+                temp<-dataset_cat()%>%group_by(createtime,rpgid)%>%dplyr::summarise(n=n())
+              }else{
+                temp<-merge(dataset_cat(),select(member,uid,Create_Time),by="uid")
+                temp%<>%filter(createtime!=Create_Time)%>%group_by(createtime,rpgid)%>%dplyr::summarise(n=n())
+              }
+              p <- ggplot(temp, aes(x=createtime, y=n,color=rpgid))+
+                geom_line()+
+                labs(y="Freq",x="week")+
+                theme(panel.grid.minor.x=element_blank())+theme_grey(base_family = "STKaiti")
+              
+            }
             p
           })
           
@@ -627,482 +934,47 @@ shinyServer(function(input, output) {
           output$login_vs_first_time_dist <- renderPlot({
             plot(first_shopping$time_diff,first_shopping$browse_count)  
           })
-          
-        
-          #GPS Plot
-          output$GPS_plot <- renderPlot({
-            if (input$city=="台北市"){
-              gps_lon<-121.5452817
-              gps_lat<-25.0672969
-              zoom_par<-13
-            } else if (input$city=="桃園"){
-              gps_lon<-121.2638554
-              gps_lat<-24.9991417
-              zoom_par<-13
-            } else if (input$city=="新北市(板橋,新莊)"){
-              gps_lon<-121.4416995
-              gps_lat<-25.0159169
-              zoom_par<-13
-            } else if (input$city=="新北市(新莊,三重)"){
-              gps_lon<-121.4756995
-              gps_lat<-25.0759169
-              zoom_par<-14
-            } else if (input$city=="新北市(永和,中和,新店)"){
-              gps_lon<-121.5002331
-              gps_lat<-24.9757189
-              zoom_par<-13
+          #order time
+          output$order_time_plot<-renderPlot({
+            hours_matrix<-data.frame(matrix(data = 0,nrow = 1,ncol = 2)) 
+            colnames(hours_matrix)<-c("hours","n")
+            order_time_plot_temp<-dataset_orders_time()
+            order_time_plot_temp%<>%group_by(hours)%>%summarise(n=n())
+            if(!("1-3"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"1-3"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
             }
-            mapgilbert <- get_map(location = c(lon=gps_lon,lat= gps_lat), zoom = zoom_par,
-                                  maptype = "roadmap", scale = 2)
-            p<-ggmap(mapgilbert) + 
-              geom_point(data=branch_gps, mapping=aes(lng, lat,color=category),size=4) + 
-              stat_density2d(dataset_GPS(), mapping=aes(x=lng, y=lat, fill=..level..), geom="polygon", alpha=0.5)+ 
-              scale_fill_gradient(low = "green", high = "red")+
-              theme_grey(base_family = "STKaiti")
-            p
+            if(!("4-6"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"4-6"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("7-9"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"7-9"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("10-12"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"10-12"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("13-15"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"13-15"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("16-18"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"16-18"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("19-21"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"19-21"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            if(!("22-0"%in%order_time_plot_temp$hours)){
+              hours_matrix[1,1]<-"22-0"
+              order_time_plot_temp<-rbind(order_time_plot_temp,hours_matrix)
+            }
+            order_time_plot_temp$hours<- factor(order_time_plot_temp$hours, levels= c("1-3", "4-6", "7-9", "10-12", "13-15", "16-18","19-21","22-0"))
+            ggplot(order_time_plot_temp,aes(x=hours,y=n))+geom_point()
           })
           
-          output$buyer_GPS_plot <- renderPlot({
-            if (input$city=="台北市"){
-              gps_lon<-121.5452817
-              gps_lat<-25.0672969
-              zoom_par<-13
-            } else if (input$city=="桃園"){
-              gps_lon<-121.2638554
-              gps_lat<-24.9991417
-              zoom_par<-13
-            } else if (input$city=="新北市(板橋,新莊)"){
-              gps_lon<-121.4416995
-              gps_lat<-25.0159169
-              zoom_par<-13
-            } else if (input$city=="新北市(新莊,三重)"){
-              gps_lon<-121.4756995
-              gps_lat<-25.0759169
-              zoom_par<-14
-            } else if (input$city=="新北市(永和,中和,新店)"){
-              gps_lon<-121.5002331
-              gps_lat<-24.9757189
-              zoom_par<-13
-            }
-            mapgilbert <- get_map(location = c(lon=gps_lon,lat= gps_lat), zoom = zoom_par,
-                                  maptype = "roadmap", scale = 2)
-            p<-ggmap(mapgilbert) + 
-              geom_point(data=branch_gps, mapping=aes(lng, lat,color=category),size=4) + 
-              stat_density2d(dataset_buyer_GPS(), mapping=aes(x=lng, y=lat, fill=..level..), geom="polygon", alpha=0.5)+ 
-              scale_fill_gradient(low = "green", high = "red")+
-              theme_grey(base_family = "STKaiti")
-            p
-          })
-          
-          output$rep_buyer_GPS_plot <- renderPlot({
-            if (input$city=="台北市"){
-              gps_lon<-121.5452817
-              gps_lat<-25.0672969
-              zoom_par<-13
-            } else if (input$city=="桃園"){
-              gps_lon<-121.2638554
-              gps_lat<-24.9991417
-              zoom_par<-13
-            } else if (input$city=="新北市(板橋,新莊)"){
-              gps_lon<-121.4416995
-              gps_lat<-25.0159169
-              zoom_par<-13
-            } else if (input$city=="新北市(新莊,三重)"){
-              gps_lon<-121.4756995
-              gps_lat<-25.0759169
-              zoom_par<-14
-            } else if (input$city=="新北市(永和,中和,新店)"){
-              gps_lon<-121.5002331
-              gps_lat<-24.9757189
-              zoom_par<-13
-            }
-            mapgilbert <- get_map(location = c(lon=gps_lon,lat= gps_lat), zoom = zoom_par,
-                                  maptype = "roadmap", scale = 2)
-            p<-ggmap(mapgilbert) + 
-              geom_point(data=branch_gps, mapping=aes(lng, lat,color=category),size=4) + 
-              stat_density2d(dataset_rep_buyer_GPS(), mapping=aes(x=lng, y=lat, fill=..level..), geom="polygon", alpha=0.5)+ 
-              scale_fill_gradient(low = "green", high = "red")+
-              theme_grey(base_family = "STKaiti")
-            p
-          })
-          dataset_AU <- reactive({
-            
-            
-            
-            if(input$AU_variable=="All"){
-              if(input$AU_select=="DAU_ratio"){
-                member_all=member_AU%>%group_by(date)%>%dplyr::summarise(member=sum(member))%>%mutate(accu_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(date)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by="date",all.x = T)
-                member_all%<>%mutate(DAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(date)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by="date",all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-
-              }
-              else if(input$AU_select=="WAU_ratio"){
-                member_all=member_AU%>%group_by(week)%>%dplyr::summarise(member=sum(member))%>%mutate(accu_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(week)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by="week",all.x = T)
-                member_all%<>%mutate(WAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(week)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by="week",all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              else if(input$AU_select=="MAU_ratio"){
-                member_all=member_AU%>%group_by(month)%>%dplyr::summarise(member=sum(member))%>%mutate(accu_member=cumsum(member))
-                userlog_all=userlog_AU%>%group_by(month)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by="month",all.x = T)
-                member_all%<>%mutate(MAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(month)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by="month",all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              
-            }
-            else if(input$AU_variable=="gender"){
-              if(input$AU_select=="DAU_ratio"){
-                member_all_a=member_AU%>%group_by(gender,date)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Female")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(gender,date)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Male")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(gender,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("gender","date"),all.x = T)
-                member_all%<>%mutate(DAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,date)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("gender","date"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-                
-              
-              else if(input$AU_select=="WAU_ratio"){
-                member_all_a=member_AU%>%group_by(gender,week)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Female")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(gender,week)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Male")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(gender,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("gender","week"),all.x = T)
-                member_all%<>%mutate(WAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,week)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("gender","week"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              else if(input$AU_select=="MAU_ratio"){
-                member_all_a=member_AU%>%group_by(gender,month)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Female")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(gender,month)%>%dplyr::summarise(member=sum(member))%>%filter(gender=="Male")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(gender,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("gender","month"),all.x = T)
-                member_all%<>%mutate(MAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(gender,month)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("gender","month"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-            }
-            
-            else if(input$AU_variable=="os"){
-              if(input$AU_select=="DAU_ratio"){
-                member_all_a=member_AU%>%group_by(os,date)%>%dplyr::summarise(member=sum(member))%>%filter(os=="IOS")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(os,date)%>%dplyr::summarise(member=sum(member))%>%filter(os=="ANDROID")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(os,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("os","date"),all.x = T)
-                member_all%<>%mutate(DAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,date)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("os","date"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              else if(input$AU_select=="WAU_ratio"){
-                member_all_a=member_AU%>%group_by(os,week)%>%dplyr::summarise(member=sum(member))%>%filter(os=="IOS")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(os,week)%>%dplyr::summarise(member=sum(member))%>%filter(os=="ANDROID")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(os,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("os","week"),all.x = T)
-                member_all%<>%mutate(WAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,week)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("os","week"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              else if(input$AU_select=="MAU_ratio"){
-                member_all_a=member_AU%>%group_by(os,month)%>%dplyr::summarise(member=sum(member))%>%filter(os=="IOS")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(os,month)%>%dplyr::summarise(member=sum(member))%>%filter(os=="ANDROID")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%group_by(os,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                member_all=merge(member_all,userlog_all,by=c("os","month"),all.x = T)
-                member_all%<>%mutate(MAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%group_by(os,month)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("os","month"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-            }
-            else if(input$AU_variable=="age"){
-              if(input$AU_select=="DAU_ratio"){
-                member_all_a=member_AU%>%group_by(age,date)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(25,30]")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(age,date)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(30,35]")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,date)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                colnames(userlog_all)[1]="age"
-                member_all=merge(member_all,userlog_all,by=c("age","date"),all.x = T)
-                member_all%<>%mutate(DAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,date)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("age","date"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-                
-              }
-              else if(input$AU_select=="WAU_ratio"){
-                member_all_a=member_AU%>%group_by(age,week)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(25,30]")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(age,week)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(30,35]")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,week)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                colnames(userlog_all)[1]="age"
-                member_all=merge(member_all,userlog_all,by=c("age","week"),all.x = T)
-                member_all%<>%mutate(WAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,week)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("age","week"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              else if(input$AU_select=="MAU_ratio"){
-                member_all_a=member_AU%>%group_by(age,month)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(25,30]")%>%mutate(accu_member=cumsum(member))
-                member_all_b=member_AU%>%group_by(age,month)%>%dplyr::summarise(member=sum(member))%>%filter(age=="(30,35]")%>%mutate(accu_member=cumsum(member))
-                member_all=rbind(member_all_a,member_all_b)
-                userlog_all=userlog_AU%>%filter(age=="(25,30]"|age=="(30,35]")%>%group_by(age,month)%>%distinct(uid)%>%dplyr::summarise(active=n())
-                colnames(userlog_all)[1]="age"
-                member_all=merge(member_all,userlog_all,by=c("age","month"),all.x = T)
-                member_all%<>%mutate(MAU_ratio=active/accu_member)
-                member_all
-                if(input$AU_buy){
-                  orders_all=orders_AU%>%filter(status_name=="Paid")%>%filter((age=="(25,30]")|(age=="(30,35]"))%>%group_by(age,month)%>%dplyr::summarise(orders=n())
-                  member_all=merge(member_all,orders_all,by=c("age","month"),all.x = T)
-                  member_all%<>%mutate(orders_ratio=orders/active)
-                  member_all
-                }
-                else
-                  member_all
-              }
-              
-            }
-            
-            
-            
-          })
-          
-          output$AU_table <- renderTable({
-            if(input$AU_select=="DAU_ratio"){
-              dataset_AU()%>%mutate(date=as.character(date))
-            }
-            else if(input$AU_select=="WAU_ratio"){
-              dataset_AU()
-            }
-            else if(input$AU_select=="MAU_ratio"){
-              dataset_AU()%>%mutate(month=as.character(month))
-            }
-            
-            
-          })
-          output$AU_plot<-renderPlot({
-            if(input$AU_select=="DAU_ratio"){
-              if(input$AU_buy){
-                p <- ggplot(dataset_AU(), aes_string(x="date",y="orders_ratio"))+geom_line()
-              }
-              else
-                p <- ggplot(dataset_AU(), aes_string(x="date",y="DAU_ratio"))+geom_line()
-              if(input$AU_variable!="All"){
-                p+aes_string(color=input$AU_variable)
-              }
-              else
-                p
-              
-            }
-            else if(input$AU_select=="WAU_ratio"){
-              if(input$AU_buy){
-                p <- ggplot(dataset_AU(), aes_string(x="week",y="orders_ratio"))+geom_line()
-              }
-              else
-                p <- ggplot(dataset_AU(), aes_string(x="week",y="WAU_ratio"))+geom_line()
-              if(input$AU_variable!="All"){
-                p+aes_string(color=input$AU_variable)
-              }
-              else
-                p
-              
-            }
-            else if(input$AU_select=="MAU_ratio"){
-              if(input$AU_buy){
-                p <- ggplot(dataset_AU(), aes_string(x="month",y="orders_ratio"))+geom_line()
-              }
-              else
-                p <- ggplot(dataset_AU(), aes_string(x="month",y="MAU_ratio"))+geom_line()
-              if(input$AU_variable!="All"){
-                p+aes_string(color=input$AU_variable)
-              }
-              else
-                p
-              
-            }
-          })
-          dataset_Data_sales <- reactive({
-            {   
-              data <- sales_summary_date
-              
-              data%<>%filter((time>=input$Data_date[1])&(time<=input$Data_date[2]))
-              
-              if(input$DorM_sales=="Month"){
-                data%<>%mutate(Month=as.Date(cut(time,breaks="month")))%>%group_by(ptid,Month)%>%dplyr::summarise(Number_Of_Shelves=sum(number),Number_Of_Orders=sum(orders),Revenue_Origin=sum(revenue_origin),Revenue_Discount=sum(revenue_discount))%>%mutate(Rate=round(Number_Of_Orders/Number_Of_Shelves,3))
-                data[is.na(data)]<-0
-                data=merge(data,product_type_data,by="ptid",all.x=T)
-                data=merge(data,branch_data,by="bid",all.x=T)
-                data%<>%select(Month,type,branchname,productname,Number_Of_Shelves,Number_Of_Orders,Rate,Revenue_Origin,Revenue_Discount,area)%>%arrange(type,branchname,productname,Month)
-                colnames(data)[2]="Category"
-                colnames(data)[3]="Branch_Name"
-                colnames(data)[4]="Product_Name"
-                colnames(data)[10]="Area"
-              }
-              else if(input$DorM_sales=="Day"){
-                data=data[,-12]
-                colnames(data)=c("Time","Category","Branch_Name","Product_Name","On","Number_Of_Orders","Rate","Revenue_Origin","Revenue_Discount","Weekday","Area")
-              }
-              if(input$type_sales!="All"){
-                data%<>%filter(Category==input$type_sales)
-              }
-              if(input$branchname_sales!="All"){
-                data%<>%filter(Branch_Name==input$branchname_sales)
-              }
-              if(input$productname_sales!="All"){
-                data%<>%filter(Product_Name==input$productname_sales)
-              }
-              if(input$area_sales!="All"){
-                data%<>%filter(Area==input$area_sales)
-              }
-              data
-            }
-          })
-          output$Data_sales <- DT::renderDataTable(DT::datatable({
-            dataset_Data_sales()
-          }))
-          
-          dataset_Stickiness <- reactive({
-            
-            if(input$Stickiness_variable=="All"){
-              tdata=userlog_AU%>%select(date,uid)
-              tdata=stickiness(tdata)
-              tdata
-            }
-            else if(input$Stickiness_variable=="gender"){
-              tdata1=userlog_AU%>%select(date,uid,gender)%>%filter(gender=="Male")%>%select(date,uid)
-              tdata2=userlog_AU%>%select(date,uid,gender)%>%filter(gender=="Female")%>%select(date,uid)
-              tdata1=stickiness(tdata1)
-              tdata1%<>%mutate(gender="Male")
-              tdata2=stickiness(tdata2)
-              tdata2%<>%mutate(gender="Female")
-              tdata=rbind(tdata1,tdata2)
-              tdata
-            }
-            else if(input$Stickiness_variable=="os"){
-              tdata1=userlog_AU%>%select(date,uid,os)%>%filter(os=="IOS")%>%select(date,uid)
-              tdata2=userlog_AU%>%select(date,uid,os)%>%filter(os=="ANDROID")%>%select(date,uid)
-              tdata1=stickiness(tdata1)
-              tdata1%<>%mutate(os="IOS")
-              tdata2=stickiness(tdata2)
-              tdata2%<>%mutate(os="ANDROID")
-              tdata=rbind(tdata1,tdata2)
-              tdata
-            }
-            else if(input$Stickiness_variable=="register_type"){
-              tdata1=userlog_AU%>%select(date,uid,register_type)%>%filter(register_type=="FB")%>%select(date,uid)
-              tdata2=userlog_AU%>%select(date,uid,register_type)%>%filter(register_type=="EMAIL")%>%select(date,uid)
-              tdata1=stickiness(tdata1)
-              tdata1%<>%mutate(register_type="FB")
-              tdata2=stickiness(tdata2)
-              tdata2%<>%mutate(register_type="EMAIL")
-              tdata=rbind(tdata1,tdata2)
-              tdata
-            }
-            else if(input$Stickiness_variable=="age"){
-              tdata1=userlog_AU%>%select(date,uid,age)%>%filter(age=="(25,30]")%>%select(date,uid)
-              tdata2=userlog_AU%>%select(date,uid,age)%>%filter(age=="(30,35]")%>%select(date,uid)
-              tdata1=stickiness(tdata1)
-              tdata1%<>%mutate(age="(25,30]")
-              tdata2=stickiness(tdata2)
-              tdata2%<>%mutate(age="(30,35]")
-              tdata=rbind(tdata1,tdata2)
-              tdata
-            }
-            
-          })
-          output$Stickiness_table <- renderTable({
-            dataset_Stickiness()%>%mutate(Date=as.character(Date),DAU=as.character(DAU),MAU=as.character(MAU))
-          })
-          output$Stickiness_plot<-renderPlot({
-            p <- ggplot(dataset_Stickiness(), aes_string(x="Date",y="Stickiness"))+geom_line()
-            if(input$Stickiness_variable!="All"){
-              p+aes_string(color=input$Stickiness_variable)
-            }
-            else
-              p
-          })
 })
 

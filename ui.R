@@ -59,41 +59,36 @@ shinyUI(fluidPage(
     tabPanel("Cohort/Funnel", 
              HTML("Cohort Analysis"),
              tableOutput('Cohort_plot'),
+             HTML("Cohort Conversion Analysis"),
+             selectInput('cohort_area', '地區', c("台中","台北"),"台北"),
+             tableOutput('Cohort_conversion_plot'),
              HTML("Money Spent"),
+             checkboxInput('LTV','LTV'),
+             checkboxInput('fun_pi','Fun Pi'),
              tableOutput('Cohort_Spent'),
-             # HTML("Cohort Analysis Man 25-30"),
-             # tableOutput('Cohort_plot_Man_25'),
-             # HTML("Cohort Analysis Man 30-35"),
-             # tableOutput('Cohort_plot_Man_30'),
-             # HTML("Cohort Analysis Female 25-30"),
-             # tableOutput('Cohort_plot_Female_25'),
-             # HTML("Cohort Analysis Female 30-35"),
-             # tableOutput('Cohort_plot_Female_30'),
-             HTML("Sales Funnel"),
-             plotOutput('Funnel_plot'),
-             HTML("WAU Funnel"),
-             plotOutput('WAU_Funnel_plot'),
-             HTML("Weekly Active users"),
-             plotOutput('WAU_plot'),
-             HTML("Monthly Active users"),
-             tableOutput('MAU'),
-             HTML("Monthly Active users based on OS"),
-             tableOutput('MAU_OS'),
-             HTML("Weekly Active users"),
-             tableOutput('WAU')
-             
-             
+             HTML("Conversion"),
+             checkboxInput('cm_percentage','percentage'),
+             tableOutput('Cohort_conversion_month'),
+             tableOutput('Conversion_trend'),
+             HTML("Average buying size"),
+             tableOutput('Cohort_buy_size'),
+             HTML("Average rep"),
+             tableOutput('Cohort_repeat'),
+             tableOutput('Repeat_trend'),
+             tableOutput('Repeat_ratio_trend')
     ),
     tabPanel("Browsing Behavior", 
-             dateRangeInput('dates_B', 'Date range',start="2015-01-22", end=substr(Sys.time(),1,10)),
+             dateRangeInput('dates_B', 'Date range',start="2016-01-22", end=substr(Sys.time(),1,10)),
              HTML("Catorgy vs Map/List"),
              plotOutput('Category_browsing'),
              HTML("Map/List vs Category"),
              plotOutput('Map_Browsing'),
              HTML("Category Borwsing"),
+             selectInput('Cat_Browsing_variable','Select Variable',c("Week","Day")),
+             checkboxInput("remove_first","Remove First Day click"),
              plotOutput('Cat_Browsing'),
              column(3,div(class="span12",tableOutput('Cat_Top')),div(class="span12",tableOutput('Ave_items'))),
-             column(5,tableOutput('Product_Top')),
+             column(5,tableOutput('Product_Top_rest'),tableOutput('Product_Top_massage'),tableOutput('Product_Top_bar'),tableOutput('Product_Top_manicure'),tableOutput('Product_Top_escape'),tableOutput('Product_Top_board')),
              column(4,tableOutput('Search_Top'))
              
     ),
@@ -103,45 +98,16 @@ shinyUI(fluidPage(
              HTML("Login before first Time Shopping"),
              plotOutput('login_vs_first_time_dist')
     ),
-    tabPanel("Effectiveness", 
-             HTML("Push notification"),
-             tableOutput('notification_table')
-    ),
-    tabPanel("Map",
-             dateRangeInput('dates_map', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10)),
-             selectInput('city','Select City',c("台北市","新北市(板橋,新莊)","新北市(新莊,三重)","新北市(永和,中和,新店)","桃園"),c("台北市")),
-             HTML("User GPS plot"),
-             plotOutput('GPS_plot'),
-             HTML("Buyer GPS plot"),
-             plotOutput('buyer_GPS_plot'),
-             HTML("Repeat Buyer GPS plot"),
-             plotOutput('rep_buyer_GPS_plot')),
     tabPanel("AU",
-             #dateRangeInput('dates_au', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10)),
-             selectInput('AU_select','Select Ratio',c("DAU_ratio","WAU_ratio","MAU_ratio"),c("DAU_ratio")),
-             selectInput('AU_variable','Select Variable',c("All","gender","os","age")),
-             checkboxInput('AU_buy',"Buy"),
-             plotOutput('AU_plot'),
-             tableOutput('AU_table')
-    ),
-    tabPanel("Stickiness",
-             selectInput('Stickiness_variable','Select Variable',c("All","gender","os","register_type","age")),
-             plotOutput('Stickiness_plot'),
-             tableOutput('Stickiness_table')
-    ),
-    tabPanel("Data",
-             fluidRow(
-               column(4,dateRangeInput('Data_date', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10))),
-               column(4,selectInput("DorM_sales","Date/Month",c("Month","Day"))),
-               column(4,selectInput("type_sales","Category",c("All",unique(as.character(sales_summary_date$type))))),
-               column(4,selectInput("branchname_sales","Branch Name",c("All",unique(as.character(sales_summary_date$branchname))))),
-               column(4,selectInput("productname_sales","Product Name",c("All",unique(as.character(sales_summary_date$productname))))),
-               column(4,selectInput("area_sales","Area",c("All",unique(sales_summary_date$area))))
-             ),
-             fluidRow(
-               DT::dataTableOutput("Data_sales")
-             )
-    )
-    )
-
-))
+             selectInput('MAU_OS','Variable',c("ALL","IOS","ANDROID"),"ALL"),
+             selectInput('MAU_var','Variable',c("MAU","DAU","DAU_MAU_ratio"),"MAU"),
+             plotOutput('MAU_plot'),
+             plotOutput('MAU_stacked'),
+             HTML("MAU"),
+             tableOutput('MAU_table')),
+    tabPanel("Order time",
+             dateRangeInput('dates_order_time', 'Date range',start="2015-11-04", end=substr(Sys.time(),1,10)),
+             selectInput('order_weekday','Weekday',c("ALL","Weekday","Weekend"),"ALL"),
+             selectInput('order_cat','Category',c("ALL","摩鐵","湯屋","商旅","美甲美睫","密室","桌遊","主題酒吧","按摩"),"ALL"),
+             plotOutput('order_time_plot'))
+)))
