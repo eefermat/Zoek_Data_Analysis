@@ -7,7 +7,7 @@ require(XLConnect)
 require(magrittr)
 require(jsonlite)
 
-setwd("~/Dropbox/App")
+#setwd("~/Dropbox/App")
 
 member<-readRDS("member_data")
 #member_birth<-readRDS("member_birth")
@@ -42,14 +42,14 @@ shinyServer(function(input, output) {
       #===============Data================
           
     output$merchant_selector <- renderUI({
-      selectInput("merchant_com", "商家名稱:", as.list(dataset_branch_com())) 
+      selectInput("merchant_com", "????????????:", as.list(dataset_branch_com())) 
     })
     output$hr_selector <- renderUI({
 
       selectInput("hr_com", "Duration(hr):", as.list(c('All',dataset_hr_com()))) 
     })
     dataset_branch_com <- reactive({
-      branch%>%filter(area_detail==input$area_com&category=="休憩")%$%branchname
+      branch%>%filter(area_detail==input$area_com&category=="??????")%$%branchname
     })
     dataset_hr_com <- reactive({
       orders%>%filter(branchname==input$merchant_com)%$%duration
@@ -123,7 +123,7 @@ shinyServer(function(input, output) {
             temp<-orders%>%filter((cd>=input$dates_M[1])&(cd<=input$dates_M[2])&(status_name=="Paid"))%>%group_by(branchname)%>%dplyr::summarise(n=n())
             temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
             temp<-temp[order(-temp$n),]
-            colnames(temp)<-c("商家","購買次數","地區")
+            colnames(temp)<-c("??????","????????????","??????")
             temp
           })
           # Merchant stats Data
@@ -168,9 +168,9 @@ shinyServer(function(input, output) {
             if (input$Type_M=="all"){
               supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday")
               demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&status_name=="Paid")
-            } else if(input$Type_M=="休憩"){
-              supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&(type=="摩鐵"|type=="商旅"))
-              demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&status_name=="Paid"&(type=="摩鐵"|type=="商旅"))
+            } else if(input$Type_M=="??????"){
+              supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&(type=="??????"|type=="??????"))
+              demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&status_name=="Paid"&(type=="??????"|type=="??????"))
             } else{
               supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&type==input$Type_M)
               demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekday"&status_name=="Paid"&type==input$Type_M)
@@ -191,9 +191,9 @@ shinyServer(function(input, output) {
             if (input$Type_M=="all"){
               supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend")
               demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&status_name=="Paid")
-            } else if(input$Type_M=="休憩"){
-              supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&(type=="摩鐵"|type=="商旅"))
-              demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&status_name=="Paid"&(type=="摩鐵"|type=="商旅"))
+            } else if(input$Type_M=="??????"){
+              supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&(type=="??????"|type=="??????"))
+              demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&status_name=="Paid"&(type=="??????"|type=="??????"))
             } else{
               supply_temp<-sales%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&type==input$Type_M)
               demand_temp<-orders%>%filter(cd>=input$dates_M[1]&cd<=input$dates_M[2]&Weekday=="Weekend"&status_name=="Paid"&type==input$Type_M)
@@ -235,7 +235,7 @@ shinyServer(function(input, output) {
               user_pt%>%filter((createtime>=input$dates_B[1])&(createtime<=input$dates_B[2]))
           })
           # dataset_pt_QK<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="休憩"&area=="台北")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="??????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -249,7 +249,7 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           # })
           dataset_pt_mix<-reactive({
@@ -267,11 +267,11 @@ shinyServer(function(input, output) {
             temp$order_percentage<-temp$order_count/temp$Views
             
             temp<-merge(temp,branch_bd,by="branchname")
-            names(temp)<-c("Merchants","Views","bid","area","cateogry","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+            names(temp)<-c("Merchants","Views","bid","area","cateogry","?????????","??????","???????????????","????????????","??????BD")
             temp[order(-temp$Views),]
           })
           # dataset_pt_massage<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="按摩"&area=="台北")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="??????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -285,12 +285,12 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           #   
           # })
           # dataset_pt_late<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="晚鳥過夜"&area=="台北")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="????????????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -304,12 +304,12 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           #   
           # })
           # dataset_pt_manicure<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="美甲美睫"&area=="台北")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="????????????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -323,11 +323,11 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           # })
           # dataset_pt_bar<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="主題酒吧"&area=="台北")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="????????????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -341,12 +341,12 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           # })
           # 
           # dataset_pt_QK_Taichung<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="休憩"&area=="台中")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="??????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -360,12 +360,12 @@ shinyServer(function(input, output) {
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           # })
           # 
           # dataset_pt_late_Taichung<-reactive({
-          #   temp<-dataset_pt()%>%filter(category=="晚鳥過夜"&area=="台中")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="????????????"&area=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname),by="branchname")
           #   temp$intention_count<-0
@@ -378,7 +378,7 @@ shinyServer(function(input, output) {
           #   temp$intention_percentage<-temp$intention_count/temp$Views
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   temp<-merge(temp,branch_bd,by="branchname")
-          #   names(temp)<-c("Merchants","Views","有意圖","銷售","有意圖比例","銷售比例","負責BD")
+          #   names(temp)<-c("Merchants","Views","?????????","??????","???????????????","????????????","??????BD")
           #   temp[order(-temp$Views),]
           #   
           # })
@@ -429,30 +429,30 @@ shinyServer(function(input, output) {
             if(input$Weekday_DS=="all"){
               if (input$Type_DS=="all"){
                 user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2]))
-              } else if(input$Type_DS=="商旅"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="泡湯x休憩")
-              } else if(input$Type_DS=="摩鐵"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="泡湯x休憩")
-              } else if(input$Type_DS=="美甲美睫"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="美甲x美睫")
-              } else if(input$Type_DS=="按摩"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="按摩紓壓")
-              } else if(input$Type_DS=="主題酒吧"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="主題酒吧")
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????")
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????")
+              } else if(input$Type_DS=="????????????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????")
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="????????????")
+              } else if(input$Type_DS=="????????????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="????????????")
               }
             } else{
               if (input$Type_DS=="all"){
                 user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2]))
-              } else if(input$Type_DS=="商旅"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="泡湯x休憩"&Weekday==input$Weekday_DS)
-              } else if(input$Type_DS=="摩鐵"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="泡湯x休憩"&Weekday==input$Weekday_DS)
-              } else if(input$Type_DS=="美甲美睫"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="美甲x美睫"&Weekday==input$Weekday_DS)
-              } else if(input$Type_DS=="按摩"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="按摩紓壓"&Weekday==input$Weekday_DS)
-              } else if(input$Type_DS=="主題酒吧"){
-                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="主題酒吧"&Weekday==input$Weekday_DS)
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????"&Weekday==input$Weekday_DS)
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????"&Weekday==input$Weekday_DS)
+              } else if(input$Type_DS=="????????????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="??????x??????"&Weekday==input$Weekday_DS)
+              } else if(input$Type_DS=="??????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="????????????"&Weekday==input$Weekday_DS)
+              } else if(input$Type_DS=="????????????"){
+                user_cat%>%filter((createtime>=input$dates_DS[1])&(createtime<=input$dates_DS[2])&rpgid=="????????????"&Weekday==input$Weekday_DS)
               }
             }
             
@@ -804,7 +804,7 @@ shinyServer(function(input, output) {
           #   temp[1:20,]
           # })
           # output$Product_Top_escape<-renderTable({
-          #   temp<-dataset_pt()%>%filter(category=="密室")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
           #   temp<-temp[order(-temp$Views),]
@@ -818,11 +818,11 @@ shinyServer(function(input, output) {
           #   temp$intention_percentage<-temp$intention_count/temp$Views
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
-          #   names(temp)<-c("Merchants","Views","地區","有意圖","銷售","有意圖比例","銷售比例")
+          #   names(temp)<-c("Merchants","Views","??????","?????????","??????","???????????????","????????????")
           #   temp[1:10,]
           # })
           # output$Product_Top_board<-renderTable({
-          #   temp<-dataset_pt()%>%filter(category=="桌遊")%>%group_by(branchname)%>%dplyr::summarise(n=n())
+          #   temp<-dataset_pt()%>%filter(category=="??????")%>%group_by(branchname)%>%dplyr::summarise(n=n())
           #   names(temp)<-c("branchname","Views")
           #   temp<-merge(temp,select(branch,branchname,area_detail),by="branchname")
           #   temp<-temp[order(-temp$Views),]
@@ -836,7 +836,7 @@ shinyServer(function(input, output) {
           #   temp$intention_percentage<-temp$intention_count/temp$Views
           #   temp$order_percentage<-temp$order_count/temp$Views
           #   
-          #   names(temp)<-c("Merchants","Views","地區","有意圖","銷售","有意圖比例","銷售比例")
+          #   names(temp)<-c("Merchants","Views","??????","?????????","??????","???????????????","????????????")
           #   temp[1:10,]
           # })
           output$Product_Top_bar<-renderTable({
@@ -1237,10 +1237,10 @@ shinyServer(function(input, output) {
           })
           #map
           output$GPS_supply_plot<-renderPlot({
-            if (input$area_DS=="台北"){
+            if (input$area_DS=="??????"){
               gps_lon<-121.5219634
               gps_lat<-25.0389007
-            } else if((input$area_DS=="台中")){
+            } else if((input$area_DS=="??????")){
               gps_lon<-120.630577
               gps_lat<- 24.1406094
             }
@@ -1255,10 +1255,10 @@ shinyServer(function(input, output) {
           })
 
           output$GPS_views_plot<-renderPlot({
-            if (input$area_DS=="台北"){
+            if (input$area_DS=="??????"){
               gps_lon<-121.5219634
               gps_lat<-25.0389007
-            } else if((input$area_DS=="台中")){
+            } else if((input$area_DS=="??????")){
               gps_lon<-120.630577
               gps_lat<- 24.1406094
             }
@@ -1292,8 +1292,8 @@ shinyServer(function(input, output) {
             comp_stats<-comp%>%group_by(hours)%>%summarise(sales=n())
             comp_stats$sales<-comp_stats$sales/(length(unique(comp$branchname)))
             
-            main_stats$name<-'本店'
-            comp_stats$name<-'比較商家'
+            main_stats$name<-'??????'
+            comp_stats$name<-'????????????'
             total<-rbind(main_stats,comp_stats)
             total$hours<-factor(total$hours,c("1-3","4-6","7-9","10-12","13-15","16-18","19-21","22-0"))
             
@@ -1328,8 +1328,8 @@ shinyServer(function(input, output) {
             colnames(main_stats)<-c("hours","amount")
             colnames(comp_stats)<-c("hours","amount")
             
-            main_stats$name<-'本店'
-            comp_stats$name<-'比較商家'
+            main_stats$name<-'??????'
+            comp_stats$name<-'????????????'
             total<-rbind(main_stats,comp_stats)
             total$hours<-factor(total$hours,c("1-3","4-6","7-9","10-12","13-15","16-18","19-21","22-0"))
             
